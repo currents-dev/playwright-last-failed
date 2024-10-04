@@ -4,7 +4,6 @@ import * as path from 'path'
 
 // Define interface for inputs
 interface ActionInputs {
-  // set
   or8n: boolean
   debug: boolean
   matrixIndex: string
@@ -41,7 +40,7 @@ async function run(): Promise<void> {
   try {
     const inputs = getInputs()
 
-    await exec.exec('npm install -g @currents/cmd@beta')
+    await exec.exec('npm install -g @currents/cmd')
 
     core.saveState('or8n', inputs.or8n)
     if (inputs.or8n) {
@@ -55,7 +54,8 @@ async function run(): Promise<void> {
       `--preset last-run`,
       `--preset-output ${presetOutput}`,
       `--matrix-index ${inputs.matrixIndex}`,
-      `--matrix-total ${inputs.matrixTotal}`
+      `--matrix-total ${inputs.matrixTotal}`,
+      `--continue`
     ]
 
     if (inputs.key) {

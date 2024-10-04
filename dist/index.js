@@ -26203,7 +26203,7 @@ function getInputs() {
 async function run() {
     try {
         const inputs = getInputs();
-        await exec.exec('npm install -g @currents/cmd@beta');
+        await exec.exec('npm install -g @currents/cmd');
         core.saveState('or8n', inputs.or8n);
         if (inputs.or8n) {
             await or8n(inputs);
@@ -26214,7 +26214,8 @@ async function run() {
             `--preset last-run`,
             `--preset-output ${presetOutput}`,
             `--matrix-index ${inputs.matrixIndex}`,
-            `--matrix-total ${inputs.matrixTotal}`
+            `--matrix-total ${inputs.matrixTotal}`,
+            `--continue`
         ];
         if (inputs.key) {
             options.push(`--key ${inputs.key}`);
