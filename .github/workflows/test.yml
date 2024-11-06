@@ -2,13 +2,20 @@ name: Test Action
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   test-action-sharding:
     strategy:
-    fail-fast: false
-    matrix:
-      shard: [1, 2]
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     runs-on: ubuntu-latest
     env:
       CURRENTS_RECORD_KEY: ${{ secrets.CURRENTS_RECORD_KEY }}
@@ -19,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
@@ -27,16 +34,23 @@ jobs:
         run: |
           echo "Key: ${{ env.CURRENTS_RECORD_KEY }}"
           echo "Matrix Index: ${{ matrix.shard }}"
-          echo "Matrix Total: ${{ matrix.job-total }}"
-
+      - name: Create the output file
+        run: |
+          mkdir playwright-last-failed
+          cd playwright-last-failed
+          mkdir test-result
+          cd test-result
+          touch .last-run.json
+          cd ../..
+          ls -la
       - name: Run My Action (Sharding)
         id: sharding_action
         uses: ./
         with:
           debug: true
-          pw-output-dir: basic/test-results
+          pw-output-dir: test-results
           matrix-index: ${{ matrix.shard }}
-          matrix-total: ${{ matrix.job-total }}
+          matrix-total: 2
 
       - name: Verify Action Output (Sharding)
         run: |
@@ -47,19 +61,18 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2]
-      runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
     env:
       CURRENTS_PROJECT_ID: ${{ secrets.CURRENTS_PROJECT_ID }}
       CURRENTS_API_KEY: ${{ secrets.CURRENTS_API_KEY }}
       CURRENTS_REST_API_URL: ${{ secrets.CURRENTS_REST_API_URL }}
 
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 

@@ -26204,8 +26204,7 @@ async function run() {
         const options = [
             `--preset last-run`,
             `--matrix-index ${state.matrixIndex}`,
-            `--matrix-total ${state.matrixTotal}`,
-            `--continue`
+            `--matrix-total ${state.matrixTotal}`
         ];
         if (state.key) {
             options.push(`--key ${state.key}`);
