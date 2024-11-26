@@ -1,6 +1,7 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as path from 'path'
+import { parseIntSafe, parseTemplate, parseYamlBoolean } from './utils'
 
 // Define interface for inputs
 interface ActionInputs {
@@ -101,7 +102,8 @@ async function or8n(inputs: ActionInputs): Promise<void> {
   const runAttempt = parseIntSafe(process.env.GITHUB_RUN_ATTEMPT, 1)
 
   if (runAttempt > 1) {
-    let previousBuildId = inputs.previousCIBuildId
+    let previousBuildId =
+      inputs.previousCIBuildId && parseTemplate(inputs.previousCIBuildId)
     if (!previousBuildId) {
       const repository = process.env.GITHUB_REPOSITORY
       const runId = process.env.GITHUB_RUN_ID
@@ -128,47 +130,6 @@ async function or8n(inputs: ActionInputs): Promise<void> {
       core.setOutput('extra-pw-flags', '--last-failed')
     }
   }
-}
-
-const parseIntSafe = (
-  value: string | undefined,
-  defaultValue: number
-): number => {
-  const parsed = Number(value)
-  return isNaN(parsed) ? defaultValue : parsed
-}
-
-function parseYamlBoolean(value: string): boolean | null {
-  const trueValues = [
-    'true',
-    'True',
-    'TRUE',
-    'yes',
-    'Yes',
-    'YES',
-    'on',
-    'On',
-    'ON'
-  ]
-  const falseValues = [
-    'false',
-    'False',
-    'FALSE',
-    'no',
-    'No',
-    'NO',
-    'off',
-    'Off',
-    'OFF'
-  ]
-
-  if (trueValues.includes(value)) {
-    return true
-  } else if (falseValues.includes(value)) {
-    return false
-  }
-
-  return null
 }
 
 run()
