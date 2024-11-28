@@ -34,15 +34,6 @@ jobs:
         run: |
           echo "Key: ${{ env.CURRENTS_RECORD_KEY }}"
           echo "Matrix Index: ${{ matrix.shard }}"
-      - name: Create the output file
-        run: |
-          mkdir playwright-last-failed
-          cd playwright-last-failed
-          mkdir test-result
-          cd test-result
-          touch .last-run.json
-          cd ../..
-          ls -la
       - name: Run My Action (Sharding)
         id: sharding_action
         uses: ./
