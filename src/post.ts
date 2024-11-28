@@ -37,7 +37,8 @@ async function run(): Promise<void> {
     const options: string[] = [
       `--preset last-run`,
       `--matrix-index ${state.matrixIndex}`,
-      `--matrix-total ${state.matrixTotal}`
+      `--matrix-total ${state.matrixTotal}`,
+      `--continue`
     ]
 
     if (state.key) {
