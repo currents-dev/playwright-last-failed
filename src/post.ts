@@ -14,7 +14,7 @@ interface PostState {
 
 function getPostState(): PostState {
   return {
-    or8n: core.getState('or8n') === 'true',
+    or8n: core.getState('or8n') === 'true' || core.getState('useAPI') === 'true',
     key: core.getState('key') ?? process.env.CURRENTS_RECORD_KEY,
     debug: core.getState('debug') === 'true',
     id: core.getState('id'),
