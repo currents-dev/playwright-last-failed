@@ -45,7 +45,7 @@ async function run(): Promise<void> {
 
     await exec.exec('npm install -g @currents/cmd')
 
-    const useAPI = inputs.useAPI || inputs.or8n;
+    const useAPI = inputs.useAPI || inputs.or8n
     core.saveState('or8n', useAPI)
     if (useAPI) {
       await or8n(inputs)
