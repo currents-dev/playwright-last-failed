@@ -5,6 +5,7 @@ import { parseIntSafe, parseTemplate, parseYamlBoolean } from './utils'
 
 // Define interface for inputs
 interface ActionInputs {
+  useAPI: boolean
   or8n: boolean
   debug: boolean
   matrixIndex: string
@@ -22,6 +23,7 @@ interface ActionInputs {
 // Get inputs with types
 function getInputs(): ActionInputs {
   return {
+    useAPI: parseYamlBoolean(core.getInput('use-api')) ?? false,
     or8n: parseYamlBoolean(core.getInput('or8n')) ?? false,
     debug: parseYamlBoolean(core.getInput('debug')) ?? false,
     apiKey: core.getInput('api-key') ?? process.env.CURRENTS_API_KEY,
@@ -43,8 +45,9 @@ async function run(): Promise<void> {
 
     await exec.exec('npm install -g @currents/cmd')
 
-    core.saveState('or8n', inputs.or8n)
-    if (inputs.or8n) {
+    const useAPI = inputs.useAPI || inputs.or8n
+    core.saveState('or8n', useAPI)
+    if (useAPI) {
       await or8n(inputs)
       return
     }

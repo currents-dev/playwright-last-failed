@@ -42889,6 +42889,7 @@ const utils_1 = __nccwpck_require__(1798);
 // Get inputs with types
 function getInputs() {
     return {
+        useAPI: (0, utils_1.parseYamlBoolean)(core.getInput('use-api')) ?? false,
         or8n: (0, utils_1.parseYamlBoolean)(core.getInput('or8n')) ?? false,
         debug: (0, utils_1.parseYamlBoolean)(core.getInput('debug')) ?? false,
         apiKey: core.getInput('api-key') ?? process.env.CURRENTS_API_KEY,
@@ -42907,8 +42908,9 @@ async function run() {
     try {
         const inputs = getInputs();
         await exec.exec('npm install -g @currents/cmd');
-        core.saveState('or8n', inputs.or8n);
-        if (inputs.or8n) {
+        const useAPI = inputs.useAPI || inputs.or8n;
+        core.saveState('or8n', useAPI);
+        if (useAPI) {
             await or8n(inputs);
             return;
         }
