@@ -35,7 +35,9 @@ jobs:
       - name: Install Dependencies
         id: install
         run: npm ci
-
+      - name: Lint Typescript
+        id: lint-typescript
+        run: npm run lint
       - name: Lint Codebase
         id: super-linter
         uses: super-linter/super-linter/slim@v7
@@ -44,6 +46,7 @@ jobs:
           FILTER_REGEX_EXCLUDE: dist/**/*
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VALIDATE_ALL_CODEBASE: true
+          VALIDATE_TYPESCRIPT_ES: false
           VALIDATE_JAVASCRIPT_STANDARD: false
           VALIDATE_JSCPD: false
           VALIDATE_TYPESCRIPT_STANDARD: false
