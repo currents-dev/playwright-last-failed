@@ -44,7 +44,6 @@ async function run(): Promise<void> {
     const inputs = getInputs()
 
     await exec.exec('npm install -g @currents/cmd')
-    await exec.exec('npm list brace-expansion')
 
     const useAPI = inputs.useAPI || inputs.or8n
     core.saveState('or8n', useAPI)
