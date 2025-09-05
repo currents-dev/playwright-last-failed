@@ -126,7 +126,11 @@ async function or8n(inputs: ActionInputs): Promise<void> {
       `${lastRunFilePath}`
     ]
     const exitCode = await exec.exec(
-      `npx currents api get-run ${options.join(' ')}`
+      `npx currents api get-run ${options.join(' ')}`,
+      [],
+      {
+        ignoreReturnCode: true
+      }
     )
 
     if (exitCode === 0) {

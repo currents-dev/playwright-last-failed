@@ -42980,7 +42980,9 @@ async function or8n(inputs) {
             `--output`,
             `${lastRunFilePath}`
         ];
-        const exitCode = await exec.exec(`npx currents api get-run ${options.join(' ')}`);
+        const exitCode = await exec.exec(`npx currents api get-run ${options.join(' ')}`, [], {
+            ignoreReturnCode: true
+        });
         if (exitCode === 0) {
             core.setOutput('extra-pw-flags', '--last-failed');
         }
