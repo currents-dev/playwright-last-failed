@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -31,9 +33,12 @@ jobs:
           node-version: '18'
 
       - name: Print inputs for debugging (Sharding)
+        env:
+          RECORD_KEY: ${{ env.CURRENTS_RECORD_KEY }}
+          SHARD: ${{ matrix.shard }}
         run: |
-          echo "Key: ${{ env.CURRENTS_RECORD_KEY }}"
-          echo "Matrix Index: ${{ matrix.shard }}"
+          echo "Key: $RECORD_KEY"
+          echo "Matrix Index: $SHARD"
       - name: Run My Action (Sharding)
         id: sharding_action
         uses: ./
@@ -44,8 +49,10 @@ jobs:
           matrix-total: 2
 
       - name: Verify Action Output (Sharding)
+        env:
+          EXTRA_FLAGS: ${{ steps.sharding_action.outputs.extra-pw-flags }}
         run: |
-          echo "Extra Playwright Flags: ${{ steps.sharding_action.outputs.extra-pw-flags }}"
+          echo "Extra Playwright Flags: $EXTRA_FLAGS"
 
   test-action-or8n:
     strategy:
@@ -61,6 +68,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -68,9 +77,12 @@ jobs:
           node-version: '18'
 
       - name: Print inputs for debugging (Or8n)
+        env:
+          API_KEY: ${{ env.CURRENTS_API_KEY }}
+          PROJECT_ID: ${{ env.CURRENTS_PROJECT_ID }}
         run: |
-          echo "API Key: ${{ env.CURRENTS_API_KEY }}"
-          echo "Project ID: ${{ env.CURRENTS_PROJECT_ID }}"
+          echo "API Key: $API_KEY"
+          echo "Project ID: $PROJECT_ID"
 
       - name: Run My Action (Or8n)
         id: or8n_action
@@ -82,5 +94,7 @@ jobs:
           pw-output-dir: basic/test-results
 
       - name: Verify Action Output (Or8n)
+        env:
+          EXTRA_FLAGS: ${{ steps.or8n_action.outputs.extra-pw-flags }}
         run: |
-          echo "Extra Playwright Flags: ${{ steps.or8n_action.outputs.extra-pw-flags }}"
+          echo "Extra Playwright Flags: $EXTRA_FLAGS"

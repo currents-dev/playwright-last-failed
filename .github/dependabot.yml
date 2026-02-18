@@ -4,6 +4,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
     groups:
       actions-minor:
         update-types:
@@ -14,6 +16,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
     groups:
       npm-development:
         dependency-type: development
