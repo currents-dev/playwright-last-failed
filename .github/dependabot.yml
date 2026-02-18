@@ -4,6 +4,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+    cooldown:
+      default-days: 14 # 2 weeks
     groups:
       actions-minor:
         update-types:
@@ -14,6 +17,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+      day: monday
+    cooldown:
+      default-days: 14 # 2 weeks
     groups:
       npm-development:
         dependency-type: development
