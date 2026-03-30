@@ -62,6 +62,6 @@ outputs:
     description: "Extra flags to pass to Playwright's test runner"
 
 runs:
-  using: node20
+  using: node24
   main: dist/index.js
   post: dist/post.js
