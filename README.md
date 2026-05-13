@@ -1,7 +1,7 @@
 # Playwright Last Failed (GitHub Action)
 
-This action helps you **re-run only the Playwright tests that failed** when you
-use GitHub Actions’ “re-run failed jobs” (or similar retries). It works together
+This action supports **re-running only the Playwright tests that failed** when
+GitHub Actions runs “re-run failed jobs” (or similar retries). It works together
 with [Currents](https://currents.dev) and the
 [`@currents/cmd`](https://www.npmjs.com/package/@currents/cmd) CLI.
 
@@ -11,14 +11,15 @@ on [docs.currents.dev](https://docs.currents.dev). For background on why re-runs
 need extra configuration, see the guide
 [Re-run only failed tests](https://docs.currents.dev/guides/ci-optimization/re-run-only-failed-tests).
 
-## What it does for you
+## Purpose
 
-- Before your test step: restores **last run** metadata (via Currents cache or
-  the Currents API) and exposes **extra Playwright CLI flags** as a step output.
+- Before the Playwright test step: restores **last run** metadata (via Currents
+  cache or the Currents API) and exposes **extra Playwright CLI flags** as a
+  step output.
 - After the job (cache mode only): saves updated **last run** metadata so the
   next retry can target failures again.
 
-You wire the output into your Playwright command—for example
+The step output is passed into the Playwright command—for example
 `npx playwright test … ${{ steps.<id>.outputs.extra-pw-flags }}`—so only failed
 tests run on retry.
 
@@ -29,7 +30,7 @@ The action runs on **Node 24** and installs `@currents/cmd` globally
 
 ### 1. Cache mode (default)
 
-Use this when you report runs to Currents with a **record key** (typical
+Suited to workflows that report runs to Currents with a **record key** (typical
 Playwright reporter + sharding flow).
 
 1. **Main step:** runs `npx currents cache get` with the `last-run` preset. On
@@ -38,32 +39,33 @@ Playwright reporter + sharding flow).
 2. **Post step:** runs `npx currents cache set` with the same preset so the next
    workflow attempt can read an updated snapshot.
 
-Authentication and targeting use your **Currents record key** (input `key` or
+Authentication and targeting use the **Currents record key** (input `key` or
 `CURRENTS_RECORD_KEY`). Optional `id`, `path`, matrix inputs, and
 `pw-output-dir` tune what is cached.
 
 ### 2. API / orchestration mode (`use-api` or `or8n`)
 
-Use this when you rely on **Currents Orchestration** (or otherwise want the CLI
-to resolve failures via the API). In this mode the **post cache step is
+Suited to workflows that rely on **Currents Orchestration** (or otherwise need
+the CLI to resolve failures via the API). In this mode the **post cache step is
 skipped**.
 
 On **re-run attempts** (`GITHUB_RUN_ATTEMPT` > 1), the main step runs
 `npx currents api get-run` to fetch the previous run and, when successful, sets
-`extra-pw-flags` to `--last-failed`. You should supply **`CURRENTS_API_KEY`**,
-**`CURRENTS_PROJECT_ID`** (and related env vars as in the docs), and use
-**`or8n: true`** (or `use-api: true`) as shown in the
+`extra-pw-flags` to `--last-failed`. The workflow should define
+**`CURRENTS_API_KEY`**, **`CURRENTS_PROJECT_ID`** (and related environment
+variables as in the docs), and set **`or8n: true`** (or `use-api: true`) as
+shown in the
 [orchestration section](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests#currents-orchestration)
 of the documentation.
 
 ## Outputs
 
-| Name             | Description                                      |
-| ---------------- | ------------------------------------------------ |
-| `extra-pw-flags` | Flags to append to your Playwright test command. |
+| Name             | Description                                     |
+| ---------------- | ----------------------------------------------- |
+| `extra-pw-flags` | Flags to append to the Playwright test command. |
 
-If restoration fails, the output may be empty; your workflow should still run
-tests normally.
+If restoration fails, the output may be empty; the workflow can still run tests
+normally.
 
 ## Inputs (options)
 
@@ -83,21 +85,21 @@ tests normally.
 | `project-id`           | No       | `''`           | Currents project id, or set `CURRENTS_PROJECT_ID`.                                                                                                                                                                            |
 | `previous-ci-build-id` | No       | `''`           | Override for the previous CI build id used when resolving the prior run (see [custom CI build id](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests#custom-ci-build-id-for-reruns)). |
 
-\*In cache mode you need a record key (input or env) for meaningful cache
-reads/writes.
+\*In cache mode a record key (input or environment) is required for meaningful
+cache reads/writes.
 
 ## Setup
 
-1. **Add `@currents/cmd` to your project** as a dev dependency and install with
-   a **frozen lockfile** in CI (`npm ci`, etc.). The action installs a global
-   CLI for convenience; pinning `@currents/cmd` in your repo keeps CI
-   reproducible. See the note in the
+1. **Add `@currents/cmd` to the repository** as a dev dependency and install
+   with a **frozen lockfile** in CI (`npm ci`, etc.). The action installs a
+   global CLI for convenience; pinning `@currents/cmd` in the repository keeps
+   CI reproducible. See the note in the
    [official docs](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests).
 2. **Configure Currents** (record key, and for API mode, API key and project id)
    using secrets and `env` as described in the documentation.
-3. **Add this action before your Playwright step** and pass `extra-pw-flags`
-   into your test command.
-4. **Sharding:** set `matrix-index` and `matrix-total` from your matrix (for
+3. **Add this action before the Playwright step** and pass `extra-pw-flags` into
+   the test command.
+4. **Sharding:** set `matrix-index` and `matrix-total` from the job matrix (for
    example `${{ matrix.shard }}` and `${{ strategy.job-total }}`).
 
 ### Minimal example (cache mode, sharded)
@@ -118,7 +120,7 @@ reads/writes.
 ```
 
 For orchestration (`or8n: true`), environment variables, custom
-`CURRENTS_CI_BUILD_ID`, and copy-paste workflows, follow
+`CURRENTS_CI_BUILD_ID`, and copy-paste workflows, see
 **[Re-run only failed tests (GitHub Actions)](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests)**.
 
 ## Action metadata
