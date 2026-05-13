@@ -45,7 +45,7 @@ Authentication and targeting use the **Currents record key** (input `key` or
 ### 2. API / orchestration mode (`use-api` or `or8n`)
 
 Suited to workflows that rely on **Currents Orchestration** (or otherwise need
-the CLI to resolve failures via the API). In this mode the **post cache step is
+the CLI to resolve failures via the API). In this mode the **post-cache step is
 skipped**.
 
 On **re-run attempts** (`GITHUB_RUN_ATTEMPT` > 1), the main step runs
@@ -85,7 +85,7 @@ normally.
 - **`use-api`** (optional, default `false`). API-based last-failed resolution
   (same code path as `or8n`).
 - **`or8n`** (optional, default `false`). Orchestration-oriented behavior (API
-  path; no cache post step).
+  path; no post-cache step).
 - **`api-key`** (optional, default `''`). API key, or set `CURRENTS_API_KEY` in
   the environment.
 - **`project-id`** (optional, default `''`). Currents project ID, or set
