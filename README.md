@@ -1,235 +1,132 @@
-# Create a GitHub Action Using TypeScript
+# Playwright Last Failed (GitHub Action)
 
-[![GitHub Super-Linter](https://github.com/actions/typescript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
-![CI](https://github.com/actions/typescript-action/actions/workflows/ci.yml/badge.svg)
-[![Check dist/](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml/badge.svg)](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml)
-[![CodeQL](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml)
-[![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
+This action helps you **re-run only the Playwright tests that failed** when you
+use GitHub Actions’ “re-run failed jobs” (or similar retries). It works together
+with [Currents](https://currents.dev) and the
+[`@currents/cmd`](https://www.npmjs.com/package/@currents/cmd) CLI.
 
-Use this template to bootstrap the creation of a TypeScript action. :rocket:
+**Full setup, sharding, orchestration, and CI build ID details:**
+[Re-run only failed tests (GitHub Actions)](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests)
+on [docs.currents.dev](https://docs.currents.dev). For background on why re-runs
+need extra configuration, see the guide
+[Re-run only failed tests](https://docs.currents.dev/guides/ci-optimization/re-run-only-failed-tests).
 
-This template includes compilation support, tests, a validation workflow,
-publishing, and versioning guidance.
+## What it does for you
 
-If you are new, there's also a simpler introduction in the
-[Hello world JavaScript action repository](https://github.com/actions/hello-world-javascript-action).
+- Before your test step: restores **last run** metadata (via Currents cache or
+  the Currents API) and exposes **extra Playwright CLI flags** as a step output.
+- After the job (cache mode only): saves updated **last run** metadata so the
+  next retry can target failures again.
 
-## Create Your Own Action
+You wire the output into your Playwright command—for example
+`npx playwright test … ${{ steps.<id>.outputs.extra-pw-flags }}`—so only failed
+tests run on retry.
 
-To create your own action, you can use this repository as a template! Just
-follow the below instructions:
+## How it works
 
-1. Click the **Use this template** button at the top of the repository
-1. Select **Create a new repository**
-1. Select an owner and name for your new repository
-1. Click **Create repository**
-1. Clone your new repository
+The action runs on **Node 24** and installs `@currents/cmd` globally
+(`npm install -g @currents/cmd`). It then behaves in one of two ways:
 
-> [!IMPORTANT]
->
-> Make sure to remove or update the [`CODEOWNERS`](./CODEOWNERS) file! For
-> details on how to use this file, see
-> [About code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
+### 1. Cache mode (default)
 
-## Initial Setup
+Use this when you report runs to Currents with a **record key** (typical
+Playwright reporter + sharding flow).
 
-After you've cloned the repository to your local machine or codespace, you'll
-need to perform some initial setup steps before you can develop your action.
+1. **Main step:** runs `npx currents cache get` with the `last-run` preset. On
+   success, it reads a generated preset file and sets the output
+   `extra-pw-flags`.
+2. **Post step:** runs `npx currents cache set` with the same preset so the next
+   workflow attempt can read an updated snapshot.
 
-> [!NOTE]
->
-> You'll need to have a reasonably modern version of
-> [Node.js](https://nodejs.org) handy (20.x or later should work!). If you are
-> using a version manager like [`nodenv`](https://github.com/nodenv/nodenv) or
-> [`nvm`](https://github.com/nvm-sh/nvm), this template has a `.node-version`
-> file at the root of the repository that will be used to automatically switch
-> to the correct version when you `cd` into the repository. Additionally, this
-> `.node-version` file is used by GitHub Actions in any `actions/setup-node`
-> actions.
+Authentication and targeting use your **Currents record key** (input `key` or
+`CURRENTS_RECORD_KEY`). Optional `id`, `path`, matrix inputs, and
+`pw-output-dir` tune what is cached.
 
-1. :hammer_and_wrench: Install the dependencies
+### 2. API / orchestration mode (`use-api` or `or8n`)
 
-   ```bash
-   npm install
-   ```
+Use this when you rely on **Currents Orchestration** (or otherwise want the CLI
+to resolve failures via the API). In this mode the **post cache step is
+skipped**.
 
-1. :building_construction: Package the TypeScript for distribution
+On **re-run attempts** (`GITHUB_RUN_ATTEMPT` > 1), the main step runs
+`npx currents api get-run` to fetch the previous run and, when successful, sets
+`extra-pw-flags` to `--last-failed`. You should supply **`CURRENTS_API_KEY`**,
+**`CURRENTS_PROJECT_ID`** (and related env vars as in the docs), and use
+**`or8n: true`** (or `use-api: true`) as shown in the
+[orchestration section](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests#currents-orchestration)
+of the documentation.
 
-   ```bash
-   npm run bundle
-   ```
+## Outputs
 
-1. :white_check_mark: Run the tests
+| Name             | Description                                      |
+| ---------------- | ------------------------------------------------ |
+| `extra-pw-flags` | Flags to append to your Playwright test command. |
 
-   ```bash
-   $ npm test
+If restoration fails, the output may be empty; your workflow should still run
+tests normally.
 
-   PASS  ./index.test.js
-     ✓ throws invalid number (3ms)
-     ✓ wait 500 ms (504ms)
-     ✓ test runs (95ms)
+## Inputs (options)
 
-   ...
-   ```
+| Input                  | Required | Default        | Description                                                                                                                                                                                                                   |
+| ---------------------- | -------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `key`                  | No\*     | `''`           | Currents **record key** (or set `CURRENTS_RECORD_KEY`). Used in cache mode.                                                                                                                                                   |
+| `debug`                | No       | `false`        | Enable debug logging for CLI commands.                                                                                                                                                                                        |
+| `id`                   | No       | `''`           | Cache id namespace for `cache get` / `cache set`.                                                                                                                                                                             |
+| `path`                 | No       | `''`           | Comma-separated paths to include when writing cache (post step).                                                                                                                                                              |
+| `output-dir`           | No       | `''`           | Directory for preset output during `cache get`.                                                                                                                                                                               |
+| `pw-output-dir`        | No       | `test-results` | Playwright output directory; used for API mode `.last-run.json` path and for `--pw-output-dir` on cache set.                                                                                                                  |
+| `matrix-index`         | No       | `1`            | Shard index for parallel runs (`cache get` / `cache set`).                                                                                                                                                                    |
+| `matrix-total`         | No       | `1`            | Total shards.                                                                                                                                                                                                                 |
+| `use-api`              | No       | `false`        | Use API-based last-failed resolution (same code path as `or8n`).                                                                                                                                                              |
+| `or8n`                 | No       | `false`        | Enable orchestration-oriented behavior (API path; no cache post step).                                                                                                                                                        |
+| `api-key`              | No       | `''`           | API key, or set `CURRENTS_API_KEY` in the environment.                                                                                                                                                                        |
+| `project-id`           | No       | `''`           | Currents project id, or set `CURRENTS_PROJECT_ID`.                                                                                                                                                                            |
+| `previous-ci-build-id` | No       | `''`           | Override for the previous CI build id used when resolving the prior run (see [custom CI build id](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests#custom-ci-build-id-for-reruns)). |
 
-## Update the Action Metadata
+\*In cache mode you need a record key (input or env) for meaningful cache
+reads/writes.
 
-The [`action.yml`](action.yml) file defines metadata about your action, such as
-input(s) and output(s). For details about this file, see
-[Metadata syntax for GitHub Actions](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions).
+## Setup
 
-When you copy this repository, update `action.yml` with the name, description,
-inputs, and outputs for your action.
+1. **Add `@currents/cmd` to your project** as a dev dependency and install with
+   a **frozen lockfile** in CI (`npm ci`, etc.). The action installs a global
+   CLI for convenience; pinning `@currents/cmd` in your repo keeps CI
+   reproducible. See the note in the
+   [official docs](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests).
+2. **Configure Currents** (record key, and for API mode, API key and project id)
+   using secrets and `env` as described in the documentation.
+3. **Add this action before your Playwright step** and pass `extra-pw-flags`
+   into your test command.
+4. **Sharding:** set `matrix-index` and `matrix-total` from your matrix (for
+   example `${{ matrix.shard }}` and `${{ strategy.job-total }}`).
 
-## Update the Action Code
-
-The [`src/`](./src/) directory is the heart of your action! This contains the
-source code that will be run when your action is invoked. You can replace the
-contents of this directory with your own code.
-
-There are a few things to keep in mind when writing your action code:
-
-- Most GitHub Actions toolkit and CI/CD operations are processed asynchronously.
-  In `main.ts`, you will see that the action is run in an `async` function.
-
-  ```javascript
-  import * as core from '@actions/core'
-  //...
-
-  async function run() {
-    try {
-      //...
-    } catch (error) {
-      core.setFailed(error.message)
-    }
-  }
-  ```
-
-  For more information about the GitHub Actions toolkit, see the
-  [documentation](https://github.com/actions/toolkit/blob/master/README.md).
-
-So, what are you waiting for? Go ahead and start customizing your action!
-
-1. Create a new branch
-
-   ```bash
-   git checkout -b releases/v1
-   ```
-
-1. Replace the contents of `src/` with your action code
-1. Add tests to `__tests__/` for your source code
-1. Format, test, and build the action
-
-   ```bash
-   npm run all
-   ```
-
-   > This step is important! It will run [`ncc`](https://github.com/vercel/ncc)
-   > to build the final JavaScript action code with all dependencies included.
-   > If you do not run this step, your action will not work correctly when it is
-   > used in a workflow. This step also includes the `--license` option for
-   > `ncc`, which will create a license file for all of the production node
-   > modules used in your project.
-
-1. Commit your changes
-
-   ```bash
-   git add .
-   git commit -m "My first action is ready!"
-   ```
-
-1. Push them to your repository
-
-   ```bash
-   git push -u origin releases/v1
-   ```
-
-1. Create a pull request and get feedback on your action
-1. Merge the pull request into the `main` branch
-
-Your action is now published! :rocket:
-
-For information about versioning your action, see
-[Versioning](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-in the GitHub Actions toolkit.
-
-## Validate the Action
-
-You can now validate the action by referencing it in a workflow file. For
-example, [`ci.yml`](./.github/workflows/ci.yml) demonstrates how to reference an
-action in the same repository.
+### Minimal example (cache mode, sharded)
 
 ```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v4
+- name: Playwright Last Failed
+  id: last-failed
+  uses: currents-dev/playwright-last-failed@v1
+  env:
+    CURRENTS_RECORD_KEY: ${{ secrets.CURRENTS_RECORD_KEY }}
+  with:
+    pw-output-dir: test-results
+    matrix-index: ${{ matrix.shard }}
+    matrix-total: ${{ strategy.job-total }}
 
-  - name: Test Local Action
-    id: test-action
-    uses: ./
-    with:
-      milliseconds: 1000
-
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
+- name: Run Playwright
+  run: npx playwright test ${{ steps.last-failed.outputs.extra-pw-flags }}
 ```
 
-For example workflow runs, check out the
-[Actions tab](https://github.com/actions/typescript-action/actions)! :rocket:
+For orchestration (`or8n: true`), environment variables, custom
+`CURRENTS_CI_BUILD_ID`, and copy-paste workflows, follow
+**[Re-run only failed tests (GitHub Actions)](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests)**.
 
-## Usage
+## Action metadata
 
-After testing, you can create version tag(s) that developers can use to
-reference different stable versions of your action. For more information, see
-[Versioning](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-in the GitHub Actions toolkit.
+Input/output definitions are in [`action.yml`](./action.yml).
 
-To include the action in a workflow in another repository, you can use the
-`uses` syntax with the `@` symbol to reference a specific branch, tag, or commit
-hash.
+## Developing this repository
 
-```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v4
-
-  - name: Test Local Action
-    id: test-action
-    uses: actions/typescript-action@v1 # Commit with the `v1` tag
-    with:
-      milliseconds: 1000
-
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
-```
-
-## Publishing a New Release
-
-This project includes a helper script, [`script/release`](./script/release)
-designed to streamline the process of tagging and pushing new releases for
-GitHub Actions.
-
-GitHub Actions allows users to select a specific version of the action to use,
-based on release tags. This script simplifies this process by performing the
-following steps:
-
-1. **Retrieving the latest release tag:** The script starts by fetching the most
-   recent SemVer release tag of the current branch, by looking at the local data
-   available in your repository.
-1. **Prompting for a new release tag:** The user is then prompted to enter a new
-   release tag. To assist with this, the script displays the tag retrieved in
-   the previous step, and validates the format of the inputted tag (vX.X.X). The
-   user is also reminded to update the version field in package.json.
-1. **Tagging the new release:** The script then tags a new release and syncs the
-   separate major tag (e.g. v1, v2) with the new release tag (e.g. v1.0.0,
-   v2.1.2). When the user is creating a new major release, the script
-   auto-detects this and creates a `releases/v#` branch for the previous major
-   version.
-1. **Pushing changes to remote:** Finally, the script pushes the necessary
-   commits, tags and branches to the remote repository. From here, you will need
-   to create a new release in GitHub so users can easily reference the new tags
-   in their workflows .
+This action is implemented in TypeScript (`src/index.ts`, `src/post.ts`). After
+changing sources, run `npm run all` to format, lint, test, and rebuild `dist/`
+before committing.
