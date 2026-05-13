@@ -5,11 +5,10 @@ GitHub Actions runs “re-run failed jobs” (or similar retries). It works toge
 with [Currents](https://currents.dev) and the
 [`@currents/cmd`](https://www.npmjs.com/package/@currents/cmd) CLI.
 
-**Full setup, sharding, orchestration, and CI build ID details:**
-[Re-run only failed tests (GitHub Actions)](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests)
-on [docs.currents.dev](https://docs.currents.dev). For background on why re-runs
-need extra configuration, see the guide
-[Re-run only failed tests](https://docs.currents.dev/guides/ci-optimization/re-run-only-failed-tests).
+**Full setup, sharding, orchestration, and CI build ID details:** [Re-run only
+failed tests (GitHub Actions)][gha-rerun] on [docs.currents.dev][docs]. For
+background on why re-runs need extra configuration, see the guide [Re-run only
+failed tests][guide-rerun].
 
 ## Purpose
 
@@ -36,7 +35,7 @@ Playwright reporter + sharding flow).
 1. **Main step:** runs `npx currents cache get` with the `last-run` preset. On
    success, it reads a generated preset file and sets the output
    `extra-pw-flags`.
-2. **Post step:** runs `npx currents cache set` with the same preset so the next
+1. **Post step:** runs `npx currents cache set` with the same preset so the next
    workflow attempt can read an updated snapshot.
 
 Authentication and targeting use the **Currents record key** (input `key` or
@@ -54,9 +53,7 @@ On **re-run attempts** (`GITHUB_RUN_ATTEMPT` > 1), the main step runs
 `extra-pw-flags` to `--last-failed`. The workflow should define
 **`CURRENTS_API_KEY`**, **`CURRENTS_PROJECT_ID`** (and related environment
 variables as in the docs), and set **`or8n: true`** (or `use-api: true`) as
-shown in the
-[orchestration section](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests#currents-orchestration)
-of the documentation.
+shown in the [orchestration section][or8n-section] of the documentation.
 
 ## Outputs
 
@@ -69,21 +66,33 @@ normally.
 
 ## Inputs (options)
 
-| Input                  | Required | Default        | Description                                                                                                                                                                                                                   |
-| ---------------------- | -------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `key`                  | No\*     | `''`           | Currents **record key** (or set `CURRENTS_RECORD_KEY`). Used in cache mode.                                                                                                                                                   |
-| `debug`                | No       | `false`        | Enable debug logging for CLI commands.                                                                                                                                                                                        |
-| `id`                   | No       | `''`           | Cache id namespace for `cache get` / `cache set`.                                                                                                                                                                             |
-| `path`                 | No       | `''`           | Comma-separated paths to include when writing cache (post step).                                                                                                                                                              |
-| `output-dir`           | No       | `''`           | Directory for preset output during `cache get`.                                                                                                                                                                               |
-| `pw-output-dir`        | No       | `test-results` | Playwright output directory; used for API mode `.last-run.json` path and for `--pw-output-dir` on cache set.                                                                                                                  |
-| `matrix-index`         | No       | `1`            | Shard index for parallel runs (`cache get` / `cache set`).                                                                                                                                                                    |
-| `matrix-total`         | No       | `1`            | Total shards.                                                                                                                                                                                                                 |
-| `use-api`              | No       | `false`        | Use API-based last-failed resolution (same code path as `or8n`).                                                                                                                                                              |
-| `or8n`                 | No       | `false`        | Enable orchestration-oriented behavior (API path; no cache post step).                                                                                                                                                        |
-| `api-key`              | No       | `''`           | API key, or set `CURRENTS_API_KEY` in the environment.                                                                                                                                                                        |
-| `project-id`           | No       | `''`           | Currents project id, or set `CURRENTS_PROJECT_ID`.                                                                                                                                                                            |
-| `previous-ci-build-id` | No       | `''`           | Override for the previous CI build id used when resolving the prior run (see [custom CI build id](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests#custom-ci-build-id-for-reruns)). |
+- **`key`** (optional, default `''`). Currents **record key**, or set
+  `CURRENTS_RECORD_KEY`. Used in cache mode.
+- **`debug`** (optional, default `false`). Enables debug logging for CLI
+  commands.
+- **`id`** (optional, default `''`). Cache ID namespace for `cache get` /
+  `cache set`.
+- **`path`** (optional, default `''`). Comma-separated paths to include when
+  writing cache (post step).
+- **`output-dir`** (optional, default `''`). Directory for preset output during
+  `cache get`.
+- **`pw-output-dir`** (optional, default `test-results`). Playwright output
+  directory; used for API mode `.last-run.json` path and for `--pw-output-dir`
+  on cache set.
+- **`matrix-index`** (optional, default `1`). Shard index for parallel runs
+  (`cache get` / `cache set`).
+- **`matrix-total`** (optional, default `1`). Total shards.
+- **`use-api`** (optional, default `false`). API-based last-failed resolution
+  (same code path as `or8n`).
+- **`or8n`** (optional, default `false`). Orchestration-oriented behavior (API
+  path; no cache post step).
+- **`api-key`** (optional, default `''`). API key, or set `CURRENTS_API_KEY` in
+  the environment.
+- **`project-id`** (optional, default `''`). Currents project ID, or set
+  `CURRENTS_PROJECT_ID`.
+- **`previous-ci-build-id`** (optional, default `''`). Override for the previous
+  CI build ID when resolving the prior run (see [custom CI build
+  ID][custom-ci-build-id]).
 
 \*In cache mode a record key (input or environment) is required for meaningful
 cache reads/writes.
@@ -93,13 +102,12 @@ cache reads/writes.
 1. **Add `@currents/cmd` to the repository** as a dev dependency and install
    with a **frozen lockfile** in CI (`npm ci`, etc.). The action installs a
    global CLI for convenience; pinning `@currents/cmd` in the repository keeps
-   CI reproducible. See the note in the
-   [official docs](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests).
-2. **Configure Currents** (record key, and for API mode, API key and project id)
+   CI reproducible. See the note in the [official docs][gha-rerun].
+1. **Configure Currents** (record key, and for API mode, API key and project ID)
    using secrets and `env` as described in the documentation.
-3. **Add this action before the Playwright step** and pass `extra-pw-flags` into
+1. **Add this action before the Playwright step** and pass `extra-pw-flags` into
    the test command.
-4. **Sharding:** set `matrix-index` and `matrix-total` from the job matrix (for
+1. **Sharding:** set `matrix-index` and `matrix-total` from the job matrix (for
    example `${{ matrix.shard }}` and `${{ strategy.job-total }}`).
 
 ### Minimal example (cache mode, sharded)
@@ -120,8 +128,8 @@ cache reads/writes.
 ```
 
 For orchestration (`or8n: true`), environment variables, custom
-`CURRENTS_CI_BUILD_ID`, and copy-paste workflows, see
-**[Re-run only failed tests (GitHub Actions)](https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests)**.
+`CURRENTS_CI_BUILD_ID`, and copypaste workflows, see **[Re-run only failed tests
+(GitHub Actions)][gha-rerun]**.
 
 ## Action metadata
 
@@ -132,3 +140,15 @@ Input/output definitions are in [`action.yml`](./action.yml).
 This action is implemented in TypeScript (`src/index.ts`, `src/post.ts`). After
 changing sources, run `npm run all` to format, lint, test, and rebuild `dist/`
 before committing.
+
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable MD013 -->
+
+[docs]: https://docs.currents.dev
+[gha-rerun]: https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests
+[guide-rerun]: https://docs.currents.dev/guides/ci-optimization/re-run-only-failed-tests
+[or8n-section]: https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests#currents-orchestration
+[custom-ci-build-id]: https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests#custom-ci-build-id-for-reruns
+
+<!-- markdownlint-enable MD013 -->
+<!-- prettier-ignore-end -->
