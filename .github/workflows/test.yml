@@ -30,7 +30,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Print inputs for debugging (Sharding)
         env:
@@ -74,7 +74,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Print inputs for debugging (Or8n)
         env:
@@ -96,5 +96,8 @@ jobs:
       - name: Verify Action Output (Or8n)
         env:
           EXTRA_FLAGS: ${{ steps.or8n_action.outputs.extra-pw-flags }}
+          EXTRA_DISCOVERY_FLAGS:
+            ${{ steps.or8n_action.outputs.extra-discovery-flags }}
         run: |
           echo "Extra Playwright Flags: $EXTRA_FLAGS"
+          echo "Extra Discovery Flags: $EXTRA_DISCOVERY_FLAGS"

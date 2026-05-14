@@ -50,16 +50,17 @@ skipped**.
 
 On **re-run attempts** (`GITHUB_RUN_ATTEMPT` > 1), the main step runs
 `npx currents api get-run` to fetch the previous run and, when successful, sets
-`extra-pw-flags` to `--last-failed`. The workflow should define
+`extra-discovery-flags` to `--last-failed`. The workflow should define
 **`CURRENTS_API_KEY`**, **`CURRENTS_PROJECT_ID`** (and related environment
 variables as in the docs), and set **`or8n: true`** (or `use-api: true`) as
 shown in the [orchestration section][or8n-section] of the documentation.
 
 ## Outputs
 
-| Name             | Description                                     |
-| ---------------- | ----------------------------------------------- |
-| `extra-pw-flags` | Flags to append to the Playwright test command. |
+| Name                    | Description                                      |
+| ----------------------- | ------------------------------------------------ |
+| `extra-pw-flags`        | Flags to append to the Playwright test command.  |
+| `extra-discovery-flags` | Flags to append to the `pwc-p discover` command. |
 
 If restoration fails, the output may be empty; the workflow can still run tests
 normally.
