@@ -135,6 +135,7 @@ async function or8n(inputs: ActionInputs): Promise<void> {
 
     if (exitCode === 0) {
       core.setOutput('extra-pw-flags', '--last-failed')
+      core.setOutput('extra-discovery-flags', '--last-failed')
     }
   }
 }

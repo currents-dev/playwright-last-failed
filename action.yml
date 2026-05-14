@@ -60,6 +60,8 @@ inputs:
 outputs:
   extra-pw-flags:
     description: "Extra flags to pass to Playwright's test runner"
+  extra-discovery-flags:
+    description: 'Extra flags to pass to pwc-p discover'
 
 runs:
   using: node24
