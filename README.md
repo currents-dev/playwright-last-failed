@@ -142,9 +142,32 @@ This action is implemented in TypeScript (`src/index.ts`, `src/post.ts`). After
 changing sources, run `npm run all` to format, lint, test, and rebuild `dist/`
 before committing.
 
+## Releases
+
+The action is consumed by tag, and releases move the major tag (`v2`), so `@v2`
+picks up fixes. See [action versioning][action-versioning].
+
+Bump `version` in `package.json`, merge that to `main`, then cut the release:
+
+```bash
+script/release
+```
+
+The script reads the version from `package.json` — it refuses to run on a dirty
+tree, off `main`, behind the remote, or with a version that is not above the
+last release — then tags `vX.Y.Z`, moves the major tag to it, and publishes the
+release notes with `gh`.
+
+Both tags go up in one atomic push, so a rejected major tag cannot leave a
+published `vX.Y.Z` behind. If a release does fail part way, fix the cause and
+run `script/release` again on the same commit: it picks up where it stopped. A
+new major leaves the previous one on a `releases/v#` branch so it stays
+patchable.
+
 <!-- prettier-ignore-start -->
 <!-- markdownlint-disable MD013 -->
 
+[action-versioning]: https://github.com/actions/toolkit/blob/main/docs/action-versioning.md
 [docs]: https://docs.currents.dev
 [gha-rerun]: https://docs.currents.dev/getting-started/ci-setup/github-actions/re-run-failed-only-tests
 [guide-rerun]: https://docs.currents.dev/guides/ci-optimization/re-run-only-failed-tests
