@@ -48,10 +48,13 @@ new_tag="v$version"
 major_tag="v${version%%.*}"
 
 # --sort=-v:refname orders by version rather than by what git describe can
-# reach, and the glob keeps matching once a component reaches two digits.
-# new_tag is excluded: on a resume it is already tagged here, and counting it
-# as the last release would hide the major it is succeeding.
-latest_tag=$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname |
+# reach, and keeps working once a component reaches two digits. Only exact
+# vX.Y.Z counts: sort -V ranks v2.1.1-rc.1 above v2.1.1, so a release
+# candidate left lying around would otherwise look like the latest release
+# and block its own final. new_tag is excluded too - on a resume it is
+# already tagged here, and counting it would hide the major it succeeds.
+latest_tag=$(git tag --list --sort=-v:refname |
+	grep -Ex 'v[0-9]+\.[0-9]+\.[0-9]+' |
 	grep -vFx "$new_tag" | head -n 1 || true)
 
 # An existing tag on this very commit is a run that died after tagging - the
@@ -78,6 +81,10 @@ fi
 echo -e "Latest release: ${BLUE}${latest_tag:-none}${OFF}"
 echo -e "New release:    ${BLUE}${new_tag}${OFF} at $(git log -1 --format='%h %s')"
 
+# What the remote has right now, so the push can refuse to clobber a release
+# someone else lands while this one sits at the prompt. Empty when absent.
+major_remote=$(git ls-remote "$remote" "refs/tags/$major_tag" | cut -f1)
+
 if git rev-parse -q --verify "refs/tags/$major_tag" >/dev/null; then
 	major_exists='yes'
 	echo -e "                moves ${BLUE}${major_tag}${OFF} from $(git log -1 --format='%h %s' "$major_tag")"
@@ -97,9 +104,13 @@ git tag --annotate --force --message "Sync $major_tag with $new_tag" "$major_tag
 
 # One atomic push: a rejected major tag (branch protection, a lost race) must
 # not leave the release tag published with @vN still on the old code.
-git push --atomic "$remote" \
+#
+# The major tag deliberately carries no '+'. --force-with-lease does the
+# forcing, and a '+' in the refspec forces unconditionally and silently
+# bypasses the lease, which would make the guard below do nothing.
+git push --atomic --force-with-lease="refs/tags/$major_tag:$major_remote" "$remote" \
 	"refs/tags/$new_tag:refs/tags/$new_tag" \
-	"+refs/tags/$major_tag:refs/tags/$major_tag"
+	"refs/tags/$major_tag:refs/tags/$major_tag"
 
 echo -e "Tagged: ${GREEN}${new_tag}${OFF}"
 if [ "$major_exists" = 'yes' ]; then
@@ -120,9 +131,16 @@ if [ -n "$previous_major" ] && [ "$previous_major" != "$major_tag" ] &&
 	git rev-parse -q --verify "refs/tags/$previous_major" >/dev/null &&
 	[ -z "$(git ls-remote --heads "$remote" "refs/heads/releases/$previous_major")" ]; then
 	# The remote decides whether this is published; a local branch left over
-	# from a failed push is reused rather than treated as done.
-	git rev-parse -q --verify "refs/heads/releases/$previous_major" >/dev/null ||
+	# from a failed push is reused rather than treated as done. It has to be
+	# the tag, though - publishing some unrelated local branch of that name as
+	# the previous major's maintenance line would be worse than not having one.
+	if git rev-parse -q --verify "refs/heads/releases/$previous_major" >/dev/null; then
+		[ "$(git rev-parse "refs/heads/releases/$previous_major")" = \
+			"$(git rev-parse "refs/tags/$previous_major^{commit}")" ] ||
+			die "Local releases/$previous_major is not at $previous_major - sort it out, then rerun."
+	else
 		git branch "releases/$previous_major" "refs/tags/$previous_major"
+	fi
 	git push --set-upstream "$remote" "releases/$previous_major"
 	echo -e "Branch: ${GREEN}releases/${previous_major}${OFF} keeps the ${previous_major} line patchable"
 fi
