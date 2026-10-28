@@ -1,126 +1,158 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Exit early
-# See: https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#The-Set-Builtin
-set -e
+# Tags a release and moves the major tag, so workflows on `@v2` pick it up.
+#
+# package.json holds the version: bump and merge that first, then run this on
+# main. Adapted from the actions/typescript-action release script, with the
+# version read instead of typed, the pre-flight checks that script leaves to
+# the operator, and a GitHub release.
+#
+# See: https://github.com/actions/toolkit/blob/main/docs/action-versioning.md
+#
+# Usage: script/release
 
-# About:
-#
-# This is a helper script to tag and push a new release. GitHub Actions use
-# release tags to allow users to select a specific version of the action to use.
-#
-# See: https://github.com/actions/typescript-action#publishing-a-new-release
-# See: https://github.com/actions/toolkit/blob/master/docs/action-versioning.md#recommendations
-#
-# This script will do the following:
-#
-# 1. Retrieve the latest release tag
-# 2. Display the latest release tag
-# 3. Prompt the user for a new release tag
-# 4. Validate the new release tag
-# 5. Remind user to update the version field in package.json
-# 6. Tag a new release
-# 7. Set 'is_major_release' variable
-# 8. Point separate major release tag (e.g. v1, v2) to the new release
-# 9. Push the new tags (with commits, if any) to remote
-# 10. If this is a major release, create a 'releases/v#' branch and push
-#
-# Usage:
-#
-# script/release
+set -euo pipefail
 
-# Variables
-semver_tag_regex='v[0-9]+\.[0-9]+\.[0-9]+$'
-semver_tag_glob='v[0-9].[0-9].[0-9]*'
-git_remote='origin'
-major_semver_tag_regex='\(v[0-9]*\)'
+cd "$(dirname "$0")/.."
 
-# Terminal colors
+remote='origin'
+release_branch='main'
+
 OFF='\033[0m'
-BOLD_RED='\033[1;31m'
-BOLD_GREEN='\033[1;32m'
-BOLD_BLUE='\033[1;34m'
-BOLD_PURPLE='\033[1;35m'
-BOLD_UNDERLINED='\033[1;4m'
-BOLD='\033[1m'
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+BLUE='\033[1;34m'
 
-# 1. Retrieve the latest release tag
-if ! latest_tag=$(git describe --abbrev=0 --match="$semver_tag_glob"); then
-	# There are no existing release tags
-	echo -e "No tags found (yet) - Continue to create and push your first tag"
-	latest_tag="[unknown]"
-fi
-
-# 2. Display the latest release tag
-echo -e "The latest release tag is: ${BOLD_BLUE}${latest_tag}${OFF}"
-
-# 3. Prompt the user for a new release tag
-read -r -p 'Enter a new release tag (vX.X.X format): ' new_tag
-
-# 4. Validate the new release tag
-if echo "$new_tag" | grep -q -E "$semver_tag_regex"; then
-	# Release tag is valid
-	echo -e "Tag: ${BOLD_BLUE}$new_tag${OFF} is valid syntax"
-else
-	# Release tag is not in `vX.X.X` format
-	echo -e "Tag: ${BOLD_BLUE}$new_tag${OFF} is ${BOLD_RED}not valid${OFF} (must be in ${BOLD}vX.X.X${OFF} format)"
+die() {
+	echo -e "${RED}$1${OFF}" >&2
 	exit 1
-fi
+}
 
-# 5. Remind user to update the version field in package.json
-echo -e -n "Make sure the version field in package.json is ${BOLD_BLUE}$new_tag${OFF}. Yes? [Y/${BOLD_UNDERLINED}n${OFF}] "
-read -r YN
+# The release is whatever main points at, so make sure that is what the
+# operator thinks it is before anything is tagged.
+[ -z "$(git status --porcelain)" ] || die 'The working tree has uncommitted changes.'
 
-if [[ ! ($YN == "y" || $YN == "Y") ]]; then
-	# Package.json version field is not up to date
-	echo -e "Please update the package.json version to ${BOLD_PURPLE}$new_tag${OFF} and commit your changes"
-	exit 1
-fi
+branch=$(git rev-parse --abbrev-ref HEAD)
+[ "$branch" = "$release_branch" ] || die "On $branch - releases are cut from $release_branch."
 
-# 6. Tag a new release
-git tag "$new_tag" --annotate --message "$new_tag Release"
-echo -e "Tagged: ${BOLD_GREEN}$new_tag${OFF}"
+# --force because a run that failed mid-push leaves the local major tag moved
+# ahead of the remote, and a plain fetch refuses to rewind it.
+git fetch --tags --force "$remote" "$release_branch"
+[ "$(git rev-parse HEAD)" = "$(git rev-parse FETCH_HEAD)" ] ||
+	die "$release_branch is not level with $remote/$release_branch - pull first."
 
-# 7. Set 'is_major_release' variable
-latest_major_release_tag=$(expr "$latest_tag" : "$major_semver_tag_regex")
-new_major_release_tag=$(expr "$new_tag" : "$major_semver_tag_regex")
+version=$(node -p 'require("./package.json").version')
+[[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || die "package.json version '$version' is not X.Y.Z."
 
-if ! [[ "$new_major_release_tag" = "$latest_major_release_tag" ]]; then
-	is_major_release='yes'
+new_tag="v$version"
+major_tag="v${version%%.*}"
+
+# --sort=-v:refname orders by version rather than by what git describe can
+# reach, and keeps working once a component reaches two digits. Only exact
+# vX.Y.Z counts: sort -V ranks v2.1.1-rc.1 above v2.1.1, so a release
+# candidate left lying around would otherwise look like the latest release
+# and block its own final. new_tag is excluded too - on a resume it is
+# already tagged here, and counting it would hide the major it succeeds.
+latest_tag=$(git tag --list --sort=-v:refname |
+	grep -Ex 'v[0-9]+\.[0-9]+\.[0-9]+' |
+	grep -vFx "$new_tag" | head -n 1 || true)
+
+# An existing tag on this very commit is a run that died after tagging - the
+# steps below are idempotent, so pick up where it stopped. Anywhere else, the
+# version has already shipped.
+if git rev-parse -q --verify "refs/tags/$new_tag" >/dev/null; then
+	[ "$(git rev-parse "$new_tag^{commit}")" = "$(git rev-parse HEAD)" ] ||
+		die "Tag $new_tag already exists on another commit - bump the version in package.json first."
+	resuming='yes'
 else
-	is_major_release='no'
+	resuming='no'
 fi
 
-# 8. Point separate major release tag (e.g. v1, v2) to the new release
-if [ $is_major_release = 'yes' ]; then
-	# Create a new major version tag and point it to this release
-	git tag "$new_major_release_tag" --annotate --message "$new_major_release_tag Release"
-	echo -e "New major version tag: ${BOLD_GREEN}$new_major_release_tag${OFF}"
+# The major tag is force-moved, so a version that went backwards would drag
+# every @vN consumer back to older code.
+if [ -n "$latest_tag" ] &&
+	[ "$new_tag" != "$(printf '%s\n%s\n' "$latest_tag" "$new_tag" | sort -V | tail -n 1)" ]; then
+	die "package.json is at $version, behind the released $latest_tag."
+fi
+
+[ "$resuming" = 'no' ] ||
+	echo -e "${BLUE}${new_tag}${OFF} is already tagged here - resuming a release that did not finish."
+
+echo -e "Latest release: ${BLUE}${latest_tag:-none}${OFF}"
+echo -e "New release:    ${BLUE}${new_tag}${OFF} at $(git log -1 --format='%h %s')"
+
+# What the remote has right now, so the push can refuse to clobber a release
+# someone else lands while this one sits at the prompt. Empty when absent.
+major_remote=$(git ls-remote "$remote" "refs/tags/$major_tag" | cut -f1)
+
+if git rev-parse -q --verify "refs/tags/$major_tag" >/dev/null; then
+	major_exists='yes'
+	echo -e "                moves ${BLUE}${major_tag}${OFF} from $(git log -1 --format='%h %s' "$major_tag")"
 else
-	# Update the major version tag to point it to this release
-	git tag "$latest_major_release_tag" --force --annotate --message "Sync $latest_major_release_tag tag with $new_tag"
-	echo -e "Synced ${BOLD_GREEN}$latest_major_release_tag${OFF} with ${BOLD_GREEN}$new_tag${OFF}"
+	major_exists='no'
+	echo -e "                creates ${BLUE}${major_tag}${OFF}"
 fi
 
-# 9. Push the new tags (with commits, if any) to remote
-git push --follow-tags
+# Moving the major tag ships this to everyone on that major at once. See the
+# Releases section of the README.
+echo 'Every workflow on the major tag picks this up immediately.'
+read -r -p 'Tag and push? [y/N] ' reply || reply=''
+[[ $reply =~ ^[Yy]$ ]] || die 'Aborted - nothing was tagged.'
 
-if [ $is_major_release = 'yes' ]; then
-	# New major version tag is pushed with the '--follow-tags' flags
-	echo -e "Tags: ${BOLD_GREEN}$new_major_release_tag${OFF} and ${BOLD_GREEN}$new_tag${OFF} pushed to remote"
+[ "$resuming" = 'yes' ] || git tag --annotate --message "$new_tag" "$new_tag"
+git tag --annotate --force --message "Sync $major_tag with $new_tag" "$major_tag"
+
+# One atomic push: a rejected major tag (branch protection, a lost race) must
+# not leave the release tag published with @vN still on the old code.
+#
+# The major tag deliberately carries no '+'. --force-with-lease does the
+# forcing, and a '+' in the refspec forces unconditionally and silently
+# bypasses the lease, which would make the guard below do nothing.
+git push --atomic --force-with-lease="refs/tags/$major_tag:$major_remote" "$remote" \
+	"refs/tags/$new_tag:refs/tags/$new_tag" \
+	"refs/tags/$major_tag:refs/tags/$major_tag"
+
+echo -e "Tagged: ${GREEN}${new_tag}${OFF}"
+if [ "$major_exists" = 'yes' ]; then
+	echo -e "Moved:  ${GREEN}${major_tag}${OFF} -> ${GREEN}${new_tag}${OFF}"
 else
-	# Force push the updated major version tag
-	git push $git_remote "$latest_major_release_tag" --force
-	echo -e "Tags: ${BOLD_GREEN}$latest_major_release_tag${OFF} and ${BOLD_GREEN}$new_tag${OFF} pushed to remote"
+	echo -e "Tagged: ${GREEN}${major_tag}${OFF} -> ${GREEN}${new_tag}${OFF}"
 fi
 
-# 10. If this is a major release, create a 'releases/v#' branch and push
-if [ $is_major_release = 'yes' ]; then
-	git branch "releases/$latest_major_release_tag" "$latest_major_release_tag"
-	echo -e "Branch: ${BOLD_BLUE}releases/$latest_major_release_tag${OFF} created from ${BOLD_BLUE}$latest_major_release_tag${OFF} tag"
-	git push --set-upstream $git_remote "releases/$latest_major_release_tag"
-	echo -e "Branch: ${BOLD_GREEN}releases/$latest_major_release_tag${OFF} pushed to remote"
+# A new major leaves the old one without a moving tag, so keep its line
+# patchable on a branch.
+previous_major=""
+if [ -n "$latest_tag" ]; then
+	previous_major="${latest_tag#v}"
+	previous_major="v${previous_major%%.*}"
 fi
 
-# Completed
-echo -e "${BOLD_GREEN}Done!${OFF}"
+if [ -n "$previous_major" ] && [ "$previous_major" != "$major_tag" ] &&
+	git rev-parse -q --verify "refs/tags/$previous_major" >/dev/null &&
+	[ -z "$(git ls-remote --heads "$remote" "refs/heads/releases/$previous_major")" ]; then
+	# The remote decides whether this is published; a local branch left over
+	# from a failed push is reused rather than treated as done. It has to be
+	# the tag, though - publishing some unrelated local branch of that name as
+	# the previous major's maintenance line would be worse than not having one.
+	if git rev-parse -q --verify "refs/heads/releases/$previous_major" >/dev/null; then
+		[ "$(git rev-parse "refs/heads/releases/$previous_major")" = \
+			"$(git rev-parse "refs/tags/$previous_major^{commit}")" ] ||
+			die "Local releases/$previous_major is not at $previous_major - sort it out, then rerun."
+	else
+		git branch "releases/$previous_major" "refs/tags/$previous_major"
+	fi
+	git push --set-upstream "$remote" "releases/$previous_major"
+	echo -e "Branch: ${GREEN}releases/${previous_major}${OFF} keeps the ${previous_major} line patchable"
+fi
+
+if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+	if gh release view "$new_tag" >/dev/null 2>&1; then
+		echo "Release $new_tag already published."
+	else
+		gh release create "$new_tag" --title "$new_tag" --generate-notes
+	fi
+else
+	echo "gh unavailable - publish the notes with: gh release create $new_tag --generate-notes"
+fi
+
+echo -e "${GREEN}Done.${OFF}"
