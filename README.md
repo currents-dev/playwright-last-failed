@@ -95,8 +95,32 @@ normally.
   CI build ID when resolving the prior run (see [custom CI build
   ID][custom-ci-build-id]).
 
-\*In cache mode a record key (input or environment) is required for meaningful
-cache reads/writes.
+\*In cache mode a record key (input or environment) is needed for cache
+reads/writes, unless the job uses GitHub OIDC (see below).
+
+### Without a stored record key
+
+If no record key is set and the job has `permissions: id-token: write`, the
+Currents CLI gets a GitHub OIDC token, exchanges it with Currents, and uses the
+short-lived record key it receives. A record key set in `key` or
+`CURRENTS_RECORD_KEY` always wins.
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+steps:
+  - name: Playwright Last Failed
+    id: last-failed
+    uses: currents-dev/playwright-last-failed@v1
+    with:
+      matrix-index: ${{ matrix.shard }}
+      matrix-total: ${{ strategy.job-total }}
+```
+
+This requires the `@currents/cmd` release that includes OIDC support (TODO:
+version). API mode (`or8n` / `use-api`) uses `api-key` and is not affected.
 
 ## Setup
 
