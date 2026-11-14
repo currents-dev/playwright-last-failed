@@ -49219,7 +49219,7 @@ const utils_1 = __nccwpck_require__(1798);
 function getPostState() {
     return {
         or8n: core.getState('or8n') === 'true' || core.getState('useAPI') === 'true',
-        key: core.getState('key') ?? process.env.CURRENTS_RECORD_KEY,
+        key: core.getInput('key'),
         projectId: core.getState('projectId'),
         debug: core.getState('debug') === 'true',
         id: core.getState('id'),
@@ -49232,6 +49232,8 @@ function getPostState() {
 async function run() {
     try {
         const state = getPostState();
+        if (state.key)
+            core.setSecret(state.key);
         if (state.or8n) {
             return;
         }
@@ -49242,9 +49244,6 @@ async function run() {
             `--matrix-total ${state.matrixTotal}`,
             `--continue`
         ];
-        if (state.key) {
-            options.push(`--key ${state.key}`);
-        }
         if (state.id) {
             options.push(`--id ${state.id}`);
         }
@@ -49259,7 +49258,7 @@ async function run() {
         }
         const cacheSetCommand = `npx currents cache set ${options.join(' ')}`;
         await exec.exec(cacheSetCommand, [], {
-            env: (0, utils_1.withProjectId)(state.projectId)
+            env: (0, utils_1.withCredentials)(state)
         });
     }
     catch (error) {
@@ -49283,7 +49282,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseTemplate = parseTemplate;
 exports.parseIntSafe = parseIntSafe;
 exports.parseYamlBoolean = parseYamlBoolean;
-exports.withProjectId = withProjectId;
+exports.withCredentials = withCredentials;
 const lodash_1 = __importDefault(__nccwpck_require__(2356));
 function parseTemplate(value) {
     try {
@@ -49329,11 +49328,15 @@ function parseYamlBoolean(value) {
     }
     return null;
 }
-// The CLI reads the project ID from CURRENTS_PROJECT_ID. A record key from OIDC
-// is issued for one project, so the CLI needs it when no key is set.
-function withProjectId(projectId) {
-    const env = process.env;
-    return projectId ? { ...env, CURRENTS_PROJECT_ID: projectId } : env;
+// The CLI reads these from its environment. The record key goes there instead
+// of the command line, which the runner prints in the log.
+function withCredentials(credentials) {
+    const env = { ...process.env };
+    if (credentials.key)
+        env.CURRENTS_RECORD_KEY = credentials.key;
+    if (credentials.projectId)
+        env.CURRENTS_PROJECT_ID = credentials.projectId;
+    return env;
 }
 
 

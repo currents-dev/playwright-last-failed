@@ -5,7 +5,7 @@ import {
   parseIntSafe,
   parseTemplate,
   parseYamlBoolean,
-  withProjectId
+  withCredentials
 } from './utils'
 
 // Define interface for inputs
@@ -47,6 +47,7 @@ function getInputs(): ActionInputs {
 async function run(): Promise<void> {
   try {
     const inputs = getInputs()
+    if (inputs.key) core.setSecret(inputs.key)
 
     await exec.exec('npm install -g @currents/cmd')
 
@@ -67,10 +68,6 @@ async function run(): Promise<void> {
       `--continue`
     ]
 
-    if (inputs.key) {
-      options.push(`--key ${inputs.key}`)
-    }
-
     if (inputs.id) {
       options.push(`--id ${inputs.id}`)
     }
@@ -87,7 +84,7 @@ async function run(): Promise<void> {
 
     const exitCode = await exec.exec(cacheGetCommand, [], {
       ignoreReturnCode: true,
-      env: withProjectId(inputs.projectId)
+      env: withCredentials(inputs)
     })
 
     if (exitCode === 0) {
@@ -95,7 +92,6 @@ async function run(): Promise<void> {
       core.setOutput('extra-pw-flags', extraPwFlags.stdout.trim())
     }
 
-    core.saveState('key', inputs.key)
     core.saveState('projectId', inputs.projectId)
     core.saveState('debug', inputs.debug)
     core.saveState('id', inputs.id)

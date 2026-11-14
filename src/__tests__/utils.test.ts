@@ -2,7 +2,7 @@ import {
   parseIntSafe,
   parseTemplate,
   parseYamlBoolean,
-  withProjectId
+  withCredentials
 } from '../utils'
 
 describe('parseTemplate', () => {
@@ -82,20 +82,30 @@ describe('parseYamlBoolean', () => {
   })
 })
 
-describe('withProjectId', () => {
-  it('sets CURRENTS_PROJECT_ID when a project ID is given', () => {
-    expect(withProjectId('my-project').CURRENTS_PROJECT_ID).toBe('my-project')
+describe('withCredentials', () => {
+  const names = ['CURRENTS_PROJECT_ID', 'CURRENTS_RECORD_KEY'] as const
+  const before = Object.fromEntries(names.map(n => [n, process.env[n]]))
+
+  afterEach(() => {
+    for (const n of names) {
+      if (before[n] === undefined) delete process.env[n]
+      else process.env[n] = before[n]
+    }
   })
 
-  it('keeps CURRENTS_PROJECT_ID of the job when the input is empty', () => {
-    const before = process.env.CURRENTS_PROJECT_ID
+  it('sets the record key and project ID given', () => {
+    const env = withCredentials({ key: 'a-key', projectId: 'my-project' })
+    expect(env.CURRENTS_RECORD_KEY).toBe('a-key')
+    expect(env.CURRENTS_PROJECT_ID).toBe('my-project')
+  })
+
+  it('keeps the values of the job when the inputs are empty', () => {
     process.env.CURRENTS_PROJECT_ID = 'from-env'
-    try {
-      expect(withProjectId('').CURRENTS_PROJECT_ID).toBe('from-env')
-      expect(withProjectId(undefined).CURRENTS_PROJECT_ID).toBe('from-env')
-    } finally {
-      if (before === undefined) delete process.env.CURRENTS_PROJECT_ID
-      else process.env.CURRENTS_PROJECT_ID = before
+    process.env.CURRENTS_RECORD_KEY = 'key-from-env'
+    for (const empty of [{ key: '', projectId: '' }, {}]) {
+      const env = withCredentials(empty)
+      expect(env.CURRENTS_PROJECT_ID).toBe('from-env')
+      expect(env.CURRENTS_RECORD_KEY).toBe('key-from-env')
     }
   })
 })

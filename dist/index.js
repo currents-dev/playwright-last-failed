@@ -49238,6 +49238,8 @@ function getInputs() {
 async function run() {
     try {
         const inputs = getInputs();
+        if (inputs.key)
+            core.setSecret(inputs.key);
         await exec.exec('npm install -g @currents/cmd');
         const useAPI = inputs.useAPI || inputs.or8n;
         core.saveState('or8n', useAPI);
@@ -49253,9 +49255,6 @@ async function run() {
             `--matrix-total ${inputs.matrixTotal}`,
             `--continue`
         ];
-        if (inputs.key) {
-            options.push(`--key ${inputs.key}`);
-        }
         if (inputs.id) {
             options.push(`--id ${inputs.id}`);
         }
@@ -49268,13 +49267,12 @@ async function run() {
         const cacheGetCommand = `npx currents cache get ${options.join(' ')}`;
         const exitCode = await exec.exec(cacheGetCommand, [], {
             ignoreReturnCode: true,
-            env: (0, utils_1.withProjectId)(inputs.projectId)
+            env: (0, utils_1.withCredentials)(inputs)
         });
         if (exitCode === 0) {
             const extraPwFlags = await exec.getExecOutput(`cat ${presetOutput}`);
             core.setOutput('extra-pw-flags', extraPwFlags.stdout.trim());
         }
-        core.saveState('key', inputs.key);
         core.saveState('projectId', inputs.projectId);
         core.saveState('debug', inputs.debug);
         core.saveState('id', inputs.id);
@@ -49331,7 +49329,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseTemplate = parseTemplate;
 exports.parseIntSafe = parseIntSafe;
 exports.parseYamlBoolean = parseYamlBoolean;
-exports.withProjectId = withProjectId;
+exports.withCredentials = withCredentials;
 const lodash_1 = __importDefault(__nccwpck_require__(2356));
 function parseTemplate(value) {
     try {
@@ -49377,11 +49375,15 @@ function parseYamlBoolean(value) {
     }
     return null;
 }
-// The CLI reads the project ID from CURRENTS_PROJECT_ID. A record key from OIDC
-// is issued for one project, so the CLI needs it when no key is set.
-function withProjectId(projectId) {
-    const env = process.env;
-    return projectId ? { ...env, CURRENTS_PROJECT_ID: projectId } : env;
+// The CLI reads these from its environment. The record key goes there instead
+// of the command line, which the runner prints in the log.
+function withCredentials(credentials) {
+    const env = { ...process.env };
+    if (credentials.key)
+        env.CURRENTS_RECORD_KEY = credentials.key;
+    if (credentials.projectId)
+        env.CURRENTS_PROJECT_ID = credentials.projectId;
+    return env;
 }
 
 

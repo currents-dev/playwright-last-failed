@@ -109,9 +109,10 @@ If no record key is set, the Currents CLI gets a record key from an OIDC token:
 - To pass a token yourself, set `CURRENTS_OIDC_TOKEN` in the step's `env`. Its
   audience must be the origin of the Currents URL.
 
-OIDC needs a project ID, because the record key it returns is issued for one
-project. Set the `project-id` input or `CURRENTS_PROJECT_ID`; the action passes
-it to the CLI as `CURRENTS_PROJECT_ID`.
+OIDC needs a project ID: it identifies the organization whose trust policy is
+checked for the token. The record key that comes back works for the whole
+organization, not only that project. Set the `project-id` input or
+`CURRENTS_PROJECT_ID`; the action passes it to the CLI as `CURRENTS_PROJECT_ID`.
 
 A record key set in `key` or `CURRENTS_RECORD_KEY` always wins.
 
