@@ -90,7 +90,7 @@ normally.
 - **`api-key`** (optional, default `''`). API key, or set `CURRENTS_API_KEY` in
   the environment.
 - **`project-id`** (optional, default `''`). Currents project ID, or set
-  `CURRENTS_PROJECT_ID`.
+  `CURRENTS_PROJECT_ID`. Required when the record key comes from OIDC.
 - **`previous-ci-build-id`** (optional, default `''`). Override for the previous
   CI build ID when resolving the prior run (see [custom CI build
   ID][custom-ci-build-id]).
@@ -109,6 +109,10 @@ If no record key is set, the Currents CLI gets a record key from an OIDC token:
 - To pass a token yourself, set `CURRENTS_OIDC_TOKEN` in the step's `env`. Its
   audience must be the origin of the Currents URL.
 
+OIDC needs a project ID, because the record key it returns is issued for one
+project. Set the `project-id` input or `CURRENTS_PROJECT_ID`; the action passes
+it to the CLI as `CURRENTS_PROJECT_ID`.
+
 A record key set in `key` or `CURRENTS_RECORD_KEY` always wins.
 
 ```yaml
@@ -121,6 +125,7 @@ steps:
     id: last-failed
     uses: currents-dev/playwright-last-failed@v1
     with:
+      project-id: my-project-id
       matrix-index: ${{ matrix.shard }}
       matrix-total: ${{ strategy.job-total }}
 ```

@@ -1,9 +1,11 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import { withProjectId } from './utils'
 
 interface PostState {
   or8n?: boolean
   key?: string
+  projectId?: string
   debug?: boolean
   id?: string
   path?: string
@@ -17,6 +19,7 @@ function getPostState(): PostState {
     or8n:
       core.getState('or8n') === 'true' || core.getState('useAPI') === 'true',
     key: core.getState('key') ?? process.env.CURRENTS_RECORD_KEY,
+    projectId: core.getState('projectId'),
     debug: core.getState('debug') === 'true',
     id: core.getState('id'),
     path: core.getState('path'),
@@ -64,7 +67,9 @@ async function run(): Promise<void> {
 
     const cacheSetCommand = `npx currents cache set ${options.join(' ')}`
 
-    await exec.exec(cacheSetCommand)
+    await exec.exec(cacheSetCommand, [], {
+      env: withProjectId(state.projectId)
+    })
   } catch (error) {
     core.setFailed((error as Error).message)
   }

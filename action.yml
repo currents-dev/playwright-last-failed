@@ -52,7 +52,9 @@ inputs:
     required: false
     default: ''
   project-id:
-    description: 'Project ID obtained from Currents dashboard'
+    description:
+      'Project ID obtained from Currents dashboard. Required when the record key
+      comes from OIDC.'
     required: false
     default: ''
   previous-ci-build-id:

@@ -1,4 +1,9 @@
-import { parseIntSafe, parseTemplate, parseYamlBoolean } from '../utils'
+import {
+  parseIntSafe,
+  parseTemplate,
+  parseYamlBoolean,
+  withProjectId
+} from '../utils'
 
 describe('parseTemplate', () => {
   it.each([
@@ -74,5 +79,23 @@ describe('parseYamlBoolean', () => {
     ['undefined', null]
   ])('should return null for invalid boolean value %s', (input, expected) => {
     expect(parseYamlBoolean(input)).toBe(expected)
+  })
+})
+
+describe('withProjectId', () => {
+  it('sets CURRENTS_PROJECT_ID when a project ID is given', () => {
+    expect(withProjectId('my-project').CURRENTS_PROJECT_ID).toBe('my-project')
+  })
+
+  it('keeps CURRENTS_PROJECT_ID of the job when the input is empty', () => {
+    const before = process.env.CURRENTS_PROJECT_ID
+    process.env.CURRENTS_PROJECT_ID = 'from-env'
+    try {
+      expect(withProjectId('').CURRENTS_PROJECT_ID).toBe('from-env')
+      expect(withProjectId(undefined).CURRENTS_PROJECT_ID).toBe('from-env')
+    } finally {
+      if (before === undefined) delete process.env.CURRENTS_PROJECT_ID
+      else process.env.CURRENTS_PROJECT_ID = before
+    }
   })
 })

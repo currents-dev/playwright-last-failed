@@ -1,7 +1,12 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as path from 'path'
-import { parseIntSafe, parseTemplate, parseYamlBoolean } from './utils'
+import {
+  parseIntSafe,
+  parseTemplate,
+  parseYamlBoolean,
+  withProjectId
+} from './utils'
 
 // Define interface for inputs
 interface ActionInputs {
@@ -81,7 +86,8 @@ async function run(): Promise<void> {
     const cacheGetCommand = `npx currents cache get ${options.join(' ')}`
 
     const exitCode = await exec.exec(cacheGetCommand, [], {
-      ignoreReturnCode: true
+      ignoreReturnCode: true,
+      env: withProjectId(inputs.projectId)
     })
 
     if (exitCode === 0) {
@@ -90,6 +96,7 @@ async function run(): Promise<void> {
     }
 
     core.saveState('key', inputs.key)
+    core.saveState('projectId', inputs.projectId)
     core.saveState('debug', inputs.debug)
     core.saveState('id', inputs.id)
     core.saveState('path', inputs.path || '')

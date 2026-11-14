@@ -49267,13 +49267,15 @@ async function run() {
         }
         const cacheGetCommand = `npx currents cache get ${options.join(' ')}`;
         const exitCode = await exec.exec(cacheGetCommand, [], {
-            ignoreReturnCode: true
+            ignoreReturnCode: true,
+            env: (0, utils_1.withProjectId)(inputs.projectId)
         });
         if (exitCode === 0) {
             const extraPwFlags = await exec.getExecOutput(`cat ${presetOutput}`);
             core.setOutput('extra-pw-flags', extraPwFlags.stdout.trim());
         }
         core.saveState('key', inputs.key);
+        core.saveState('projectId', inputs.projectId);
         core.saveState('debug', inputs.debug);
         core.saveState('id', inputs.id);
         core.saveState('path', inputs.path || '');
@@ -49329,6 +49331,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseTemplate = parseTemplate;
 exports.parseIntSafe = parseIntSafe;
 exports.parseYamlBoolean = parseYamlBoolean;
+exports.withProjectId = withProjectId;
 const lodash_1 = __importDefault(__nccwpck_require__(2356));
 function parseTemplate(value) {
     try {
@@ -49373,6 +49376,12 @@ function parseYamlBoolean(value) {
         return false;
     }
     return null;
+}
+// The CLI reads the project ID from CURRENTS_PROJECT_ID. A record key from OIDC
+// is issued for one project, so the CLI needs it when no key is set.
+function withProjectId(projectId) {
+    const env = process.env;
+    return projectId ? { ...env, CURRENTS_PROJECT_ID: projectId } : env;
 }
 
 
