@@ -100,10 +100,16 @@ reads/writes, unless the job uses GitHub OIDC (see below).
 
 ### Without a stored record key
 
-If no record key is set and the job has `permissions: id-token: write`, the
-Currents CLI gets a GitHub OIDC token, exchanges it with Currents, and uses the
-short-lived record key it receives. A record key set in `key` or
-`CURRENTS_RECORD_KEY` always wins.
+If no record key is set, the Currents CLI gets a record key from an OIDC token:
+
+- On GitHub Actions, a job with `permissions: id-token: write` needs nothing
+  else. The CLI requests the token from GitHub, with the origin of the Currents
+  URL as its audience, and exchanges it with Currents for a short-lived record
+  key.
+- To pass a token yourself, set `CURRENTS_OIDC_TOKEN` in the step's `env`. Its
+  audience must be the origin of the Currents URL.
+
+A record key set in `key` or `CURRENTS_RECORD_KEY` always wins.
 
 ```yaml
 permissions:

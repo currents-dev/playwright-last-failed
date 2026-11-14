@@ -7,7 +7,8 @@ inputs:
   key:
     description:
       'Your secret Record Key obtained from Currents. Optional: without it the
-      CLI uses GitHub OIDC when the job has id-token: write.'
+      CLI gets a record key from an OIDC token (id-token: write on GitHub
+      Actions, or CURRENTS_OIDC_TOKEN).'
     required: false
     default: ''
   debug:
