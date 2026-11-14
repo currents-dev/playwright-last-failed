@@ -90,13 +90,48 @@ normally.
 - **`api-key`** (optional, default `''`). API key, or set `CURRENTS_API_KEY` in
   the environment.
 - **`project-id`** (optional, default `''`). Currents project ID, or set
-  `CURRENTS_PROJECT_ID`.
+  `CURRENTS_PROJECT_ID`. Required when the record key comes from OIDC.
 - **`previous-ci-build-id`** (optional, default `''`). Override for the previous
   CI build ID when resolving the prior run (see [custom CI build
   ID][custom-ci-build-id]).
 
-\*In cache mode a record key (input or environment) is required for meaningful
-cache reads/writes.
+\*In cache mode a record key (input or environment) is needed for cache
+reads/writes, unless the job uses GitHub OIDC (see below).
+
+### Without a stored record key
+
+If no record key is set, the Currents CLI gets a record key from an OIDC token:
+
+- On GitHub Actions, a job with `permissions: id-token: write` needs nothing
+  else. The CLI requests the token from GitHub, with the origin of the Currents
+  URL as its audience, and exchanges it with Currents for a short-lived record
+  key.
+- To pass a token yourself, set `CURRENTS_OIDC_TOKEN` in the step's `env`. Its
+  audience must be the origin of the Currents URL.
+
+OIDC needs a project ID, because the record key it returns is issued for one
+project. Set the `project-id` input or `CURRENTS_PROJECT_ID`; the action passes
+it to the CLI as `CURRENTS_PROJECT_ID`.
+
+A record key set in `key` or `CURRENTS_RECORD_KEY` always wins.
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+steps:
+  - name: Playwright Last Failed
+    id: last-failed
+    uses: currents-dev/playwright-last-failed@v1
+    with:
+      project-id: my-project-id
+      matrix-index: ${{ matrix.shard }}
+      matrix-total: ${{ strategy.job-total }}
+```
+
+This requires the `@currents/cmd` release that includes OIDC support (TODO:
+version). API mode (`or8n` / `use-api`) uses `api-key` and is not affected.
 
 ## Setup
 

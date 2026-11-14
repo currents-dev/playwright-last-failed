@@ -5,7 +5,10 @@ author: 'Currents Software Inc'
 
 inputs:
   key:
-    description: 'Your secret Record Key obtained from Currents'
+    description:
+      'Your secret Record Key obtained from Currents. Optional: without it the
+      CLI gets a record key from an OIDC token (id-token: write on GitHub
+      Actions, or CURRENTS_OIDC_TOKEN).'
     required: false
     default: ''
   debug:
@@ -49,7 +52,9 @@ inputs:
     required: false
     default: ''
   project-id:
-    description: 'Project ID obtained from Currents dashboard'
+    description:
+      'Project ID obtained from Currents dashboard. Required when the record key
+      comes from OIDC.'
     required: false
     default: ''
   previous-ci-build-id:
