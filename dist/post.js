@@ -49221,6 +49221,7 @@ function getPostState() {
         or8n: core.getState('or8n') === 'true' || core.getState('useAPI') === 'true',
         key: core.getInput('key'),
         projectId: core.getState('projectId'),
+        oidcAudience: core.getInput('oidc-audience'),
         debug: core.getState('debug') === 'true',
         id: core.getState('id'),
         path: core.getState('path'),
@@ -49336,6 +49337,9 @@ function withCredentials(credentials) {
         env.CURRENTS_RECORD_KEY = credentials.key;
     if (credentials.projectId)
         env.CURRENTS_PROJECT_ID = credentials.projectId;
+    if (credentials.oidcAudience) {
+        env.CURRENTS_OIDC_AUDIENCE = credentials.oidcAudience;
+    }
     return env;
 }
 

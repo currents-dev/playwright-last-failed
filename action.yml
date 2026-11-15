@@ -57,6 +57,12 @@ inputs:
       comes from OIDC.'
     required: false
     default: ''
+  oidc-audience:
+    description:
+      'Audience of the OIDC token, when the record key comes from OIDC. Default
+      currents:record-key. Staging and on-prem Currents use their own value.'
+    required: false
+    default: ''
   previous-ci-build-id:
     description: 'The ID of the previous CI build'
     required: false

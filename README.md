@@ -91,6 +91,9 @@ normally.
   the environment.
 - **`project-id`** (optional, default `''`). Currents project ID, or set
   `CURRENTS_PROJECT_ID`. Required when the record key comes from OIDC.
+- **`oidc-audience`** (optional, default `''`). Audience of the OIDC token, or
+  set `CURRENTS_OIDC_AUDIENCE`. The CLI uses `currents:record-key` when it is
+  empty.
 - **`previous-ci-build-id`** (optional, default `''`). Override for the previous
   CI build ID when resolving the prior run (see [custom CI build
   ID][custom-ci-build-id]).
@@ -103,11 +106,17 @@ reads/writes, unless the job uses GitHub OIDC (see below).
 If no record key is set, the Currents CLI gets a record key from an OIDC token:
 
 - On GitHub Actions, a job with `permissions: id-token: write` needs nothing
-  else. The CLI requests the token from GitHub, with the origin of the Currents
-  URL as its audience, and exchanges it with Currents for a short-lived record
+  else. The CLI requests the token from GitHub with the audience
+  `currents:record-key` and exchanges it with Currents for a short-lived record
   key.
 - To pass a token yourself, set `CURRENTS_OIDC_TOKEN` in the step's `env`. Its
-  audience must be the origin of the Currents URL.
+  audience must be the same value.
+
+The audience is a fixed name, not derived from the Currents URL. Staging and
+on-prem Currents use their own value (for on-prem, the one your admin chose, for
+example `currents:record-key:<company>`). Set it in the `oidc-audience` input or
+`CURRENTS_OIDC_AUDIENCE`; the action passes it to the CLI as
+`CURRENTS_OIDC_AUDIENCE`.
 
 OIDC needs a project ID: it identifies the organization whose trust policy is
 checked for the token. The record key that comes back works for the whole

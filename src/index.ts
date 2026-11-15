@@ -17,6 +17,7 @@ interface ActionInputs {
   matrixTotal: string
   apiKey?: string
   projectId?: string
+  oidcAudience?: string
   previousCIBuildId?: string
   key?: string
   id?: string
@@ -35,6 +36,7 @@ function getInputs(): ActionInputs {
     projectId: core.getInput('project-id') ?? process.env.CURRENTS_PROJECT_ID,
     previousCIBuildId: core.getInput('previous-ci-build-id'),
     key: core.getInput('key') ?? process.env.CURRENTS_RECORD_KEY,
+    oidcAudience: core.getInput('oidc-audience'),
     id: core.getInput('id'),
     path: core.getInput('path'),
     outputDir: core.getInput('output-dir'),

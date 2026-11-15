@@ -6,6 +6,7 @@ interface PostState {
   or8n?: boolean
   key?: string
   projectId?: string
+  oidcAudience?: string
   debug?: boolean
   id?: string
   path?: string
@@ -20,6 +21,7 @@ function getPostState(): PostState {
       core.getState('or8n') === 'true' || core.getState('useAPI') === 'true',
     key: core.getInput('key'),
     projectId: core.getState('projectId'),
+    oidcAudience: core.getInput('oidc-audience'),
     debug: core.getState('debug') === 'true',
     id: core.getState('id'),
     path: core.getState('path'),
