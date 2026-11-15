@@ -1,9 +1,12 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import { withCredentials } from './utils'
 
 interface PostState {
   or8n?: boolean
   key?: string
+  projectId?: string
+  oidcAudience?: string
   debug?: boolean
   id?: string
   path?: string
@@ -16,7 +19,9 @@ function getPostState(): PostState {
   return {
     or8n:
       core.getState('or8n') === 'true' || core.getState('useAPI') === 'true',
-    key: core.getState('key') ?? process.env.CURRENTS_RECORD_KEY,
+    key: core.getInput('key'),
+    projectId: core.getState('projectId'),
+    oidcAudience: core.getInput('oidc-audience'),
     debug: core.getState('debug') === 'true',
     id: core.getState('id'),
     path: core.getState('path'),
@@ -29,6 +34,7 @@ function getPostState(): PostState {
 async function run(): Promise<void> {
   try {
     const state = getPostState()
+    if (state.key) core.setSecret(state.key)
 
     if (state.or8n) {
       return
@@ -41,10 +47,6 @@ async function run(): Promise<void> {
       `--matrix-total ${state.matrixTotal}`,
       `--continue`
     ]
-
-    if (state.key) {
-      options.push(`--key ${state.key}`)
-    }
 
     if (state.id) {
       options.push(`--id ${state.id}`)
@@ -64,7 +66,9 @@ async function run(): Promise<void> {
 
     const cacheSetCommand = `npx currents cache set ${options.join(' ')}`
 
-    await exec.exec(cacheSetCommand)
+    await exec.exec(cacheSetCommand, [], {
+      env: withCredentials(state)
+    })
   } catch (error) {
     core.setFailed((error as Error).message)
   }

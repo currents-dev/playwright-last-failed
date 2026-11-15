@@ -49227,6 +49227,7 @@ function getInputs() {
         projectId: core.getInput('project-id') ?? process.env.CURRENTS_PROJECT_ID,
         previousCIBuildId: core.getInput('previous-ci-build-id'),
         key: core.getInput('key') ?? process.env.CURRENTS_RECORD_KEY,
+        oidcAudience: core.getInput('oidc-audience'),
         id: core.getInput('id'),
         path: core.getInput('path'),
         outputDir: core.getInput('output-dir'),
@@ -49238,6 +49239,8 @@ function getInputs() {
 async function run() {
     try {
         const inputs = getInputs();
+        if (inputs.key)
+            core.setSecret(inputs.key);
         await exec.exec('npm install -g @currents/cmd');
         const useAPI = inputs.useAPI || inputs.or8n;
         core.saveState('or8n', useAPI);
@@ -49253,9 +49256,6 @@ async function run() {
             `--matrix-total ${inputs.matrixTotal}`,
             `--continue`
         ];
-        if (inputs.key) {
-            options.push(`--key ${inputs.key}`);
-        }
         if (inputs.id) {
             options.push(`--id ${inputs.id}`);
         }
@@ -49267,13 +49267,14 @@ async function run() {
         }
         const cacheGetCommand = `npx currents cache get ${options.join(' ')}`;
         const exitCode = await exec.exec(cacheGetCommand, [], {
-            ignoreReturnCode: true
+            ignoreReturnCode: true,
+            env: (0, utils_1.withCredentials)(inputs)
         });
         if (exitCode === 0) {
             const extraPwFlags = await exec.getExecOutput(`cat ${presetOutput}`);
             core.setOutput('extra-pw-flags', extraPwFlags.stdout.trim());
         }
-        core.saveState('key', inputs.key);
+        core.saveState('projectId', inputs.projectId);
         core.saveState('debug', inputs.debug);
         core.saveState('id', inputs.id);
         core.saveState('path', inputs.path || '');
@@ -49329,6 +49330,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseTemplate = parseTemplate;
 exports.parseIntSafe = parseIntSafe;
 exports.parseYamlBoolean = parseYamlBoolean;
+exports.withCredentials = withCredentials;
 const lodash_1 = __importDefault(__nccwpck_require__(2356));
 function parseTemplate(value) {
     try {
@@ -49373,6 +49375,19 @@ function parseYamlBoolean(value) {
         return false;
     }
     return null;
+}
+// The CLI reads these from its environment. The record key goes there instead
+// of the command line, which the runner prints in the log.
+function withCredentials(credentials) {
+    const env = { ...process.env };
+    if (credentials.key)
+        env.CURRENTS_RECORD_KEY = credentials.key;
+    if (credentials.projectId)
+        env.CURRENTS_PROJECT_ID = credentials.projectId;
+    if (credentials.oidcAudience) {
+        env.CURRENTS_OIDC_AUDIENCE = credentials.oidcAudience;
+    }
+    return env;
 }
 
 

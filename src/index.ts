@@ -1,7 +1,12 @@
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
 import * as path from 'path'
-import { parseIntSafe, parseTemplate, parseYamlBoolean } from './utils'
+import {
+  parseIntSafe,
+  parseTemplate,
+  parseYamlBoolean,
+  withCredentials
+} from './utils'
 
 // Define interface for inputs
 interface ActionInputs {
@@ -12,6 +17,7 @@ interface ActionInputs {
   matrixTotal: string
   apiKey?: string
   projectId?: string
+  oidcAudience?: string
   previousCIBuildId?: string
   key?: string
   id?: string
@@ -30,6 +36,7 @@ function getInputs(): ActionInputs {
     projectId: core.getInput('project-id') ?? process.env.CURRENTS_PROJECT_ID,
     previousCIBuildId: core.getInput('previous-ci-build-id'),
     key: core.getInput('key') ?? process.env.CURRENTS_RECORD_KEY,
+    oidcAudience: core.getInput('oidc-audience'),
     id: core.getInput('id'),
     path: core.getInput('path'),
     outputDir: core.getInput('output-dir'),
@@ -42,6 +49,7 @@ function getInputs(): ActionInputs {
 async function run(): Promise<void> {
   try {
     const inputs = getInputs()
+    if (inputs.key) core.setSecret(inputs.key)
 
     await exec.exec('npm install -g @currents/cmd')
 
@@ -62,10 +70,6 @@ async function run(): Promise<void> {
       `--continue`
     ]
 
-    if (inputs.key) {
-      options.push(`--key ${inputs.key}`)
-    }
-
     if (inputs.id) {
       options.push(`--id ${inputs.id}`)
     }
@@ -81,7 +85,8 @@ async function run(): Promise<void> {
     const cacheGetCommand = `npx currents cache get ${options.join(' ')}`
 
     const exitCode = await exec.exec(cacheGetCommand, [], {
-      ignoreReturnCode: true
+      ignoreReturnCode: true,
+      env: withCredentials(inputs)
     })
 
     if (exitCode === 0) {
@@ -89,7 +94,7 @@ async function run(): Promise<void> {
       core.setOutput('extra-pw-flags', extraPwFlags.stdout.trim())
     }
 
-    core.saveState('key', inputs.key)
+    core.saveState('projectId', inputs.projectId)
     core.saveState('debug', inputs.debug)
     core.saveState('id', inputs.id)
     core.saveState('path', inputs.path || '')

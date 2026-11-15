@@ -1,4 +1,9 @@
-import { parseIntSafe, parseTemplate, parseYamlBoolean } from '../utils'
+import {
+  parseIntSafe,
+  parseTemplate,
+  parseYamlBoolean,
+  withCredentials
+} from '../utils'
 
 describe('parseTemplate', () => {
   it.each([
@@ -74,5 +79,47 @@ describe('parseYamlBoolean', () => {
     ['undefined', null]
   ])('should return null for invalid boolean value %s', (input, expected) => {
     expect(parseYamlBoolean(input)).toBe(expected)
+  })
+})
+
+describe('withCredentials', () => {
+  const names = [
+    'CURRENTS_PROJECT_ID',
+    'CURRENTS_RECORD_KEY',
+    'CURRENTS_OIDC_AUDIENCE'
+  ] as const
+  const before = Object.fromEntries(names.map(n => [n, process.env[n]]))
+
+  afterEach(() => {
+    for (const n of names) {
+      if (before[n] === undefined) delete process.env[n]
+      else process.env[n] = before[n]
+    }
+  })
+
+  it('sets the record key and project ID given', () => {
+    const env = withCredentials({ key: 'a-key', projectId: 'my-project' })
+    expect(env.CURRENTS_RECORD_KEY).toBe('a-key')
+    expect(env.CURRENTS_PROJECT_ID).toBe('my-project')
+  })
+
+  it('sets the OIDC audience given', () => {
+    expect(
+      withCredentials({ oidcAudience: 'currents:record-key:acme' })
+    ).toMatchObject({
+      CURRENTS_OIDC_AUDIENCE: 'currents:record-key:acme'
+    })
+  })
+
+  it('keeps the values of the job when the inputs are empty', () => {
+    process.env.CURRENTS_PROJECT_ID = 'from-env'
+    process.env.CURRENTS_RECORD_KEY = 'key-from-env'
+    process.env.CURRENTS_OIDC_AUDIENCE = 'audience-from-env'
+    for (const empty of [{ key: '', projectId: '', oidcAudience: '' }, {}]) {
+      const env = withCredentials(empty)
+      expect(env.CURRENTS_PROJECT_ID).toBe('from-env')
+      expect(env.CURRENTS_RECORD_KEY).toBe('key-from-env')
+      expect(env.CURRENTS_OIDC_AUDIENCE).toBe('audience-from-env')
+    }
   })
 })
