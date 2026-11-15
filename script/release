@@ -116,7 +116,11 @@ read -r -p 'Tag and push? [y/N] ' reply || reply=''
 
 # A release that landed while the prompt waited. The lease would refuse the
 # push anyway; this stops before anything is tagged and says why.
-[ "$(git ls-remote "$remote" "refs/tags/$major_tag" | cut -f1)" = "$major_expected" ] ||
+# Only the exact line counts: an annotated tag can also list its peeled
+# commit as refs/tags/vN^{}.
+major_now=$(git ls-remote --tags "$remote" "refs/tags/$major_tag" |
+	awk -v ref="refs/tags/$major_tag" '$2 == ref { print $1 }')
+[ "$major_now" = "$major_expected" ] ||
 	die "$major_tag changed on $remote since the checks ran - nothing was tagged. Run script/release again."
 
 [ "$resuming" = 'yes' ] || git tag --annotate --message "$new_tag" "$new_tag"
