@@ -140,8 +140,8 @@ steps:
       matrix-total: ${{ strategy.job-total }}
 ```
 
-This requires the `@currents/cmd` release that includes OIDC support (TODO:
-version). API mode (`or8n` / `use-api`) uses `api-key` and is not affected.
+This requires `@currents/cmd` 3.1.0 or later. API mode (`or8n` / `use-api`) uses
+`api-key` and is not affected.
 
 ## Setup
 
