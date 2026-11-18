@@ -49241,6 +49241,8 @@ async function run() {
         const inputs = getInputs();
         if (inputs.key)
             core.setSecret(inputs.key);
+        if (inputs.apiKey)
+            core.setSecret(inputs.apiKey);
         const previousCIBuildId = (0, utils_1.rerunPreviousCIBuildId)((0, utils_1.parseIntSafe)(process.env.GITHUB_RUN_ATTEMPT, 1), inputs.previousCIBuildId);
         if (previousCIBuildId) {
             core.exportVariable('CURRENTS_PREVIOUS_CI_BUILD_ID', previousCIBuildId);
@@ -49309,7 +49311,8 @@ async function or8n(inputs) {
             `${lastRunFilePath}`
         ];
         const exitCode = await exec.exec(`npx currents api get-run ${options.join(' ')}`, [], {
-            ignoreReturnCode: true
+            ignoreReturnCode: true,
+            env: (0, utils_1.withCredentials)(inputs)
         });
         if (exitCode === 0) {
             core.setOutput('extra-pw-flags', '--last-failed');
@@ -49397,6 +49400,8 @@ function withCredentials(credentials) {
     const env = { ...process.env };
     if (credentials.key)
         env.CURRENTS_RECORD_KEY = credentials.key;
+    if (credentials.apiKey)
+        env.CURRENTS_API_KEY = credentials.apiKey;
     if (credentials.projectId)
         env.CURRENTS_PROJECT_ID = credentials.projectId;
     if (credentials.oidcAudience) {

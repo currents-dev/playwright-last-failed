@@ -49346,6 +49346,8 @@ function withCredentials(credentials) {
     const env = { ...process.env };
     if (credentials.key)
         env.CURRENTS_RECORD_KEY = credentials.key;
+    if (credentials.apiKey)
+        env.CURRENTS_API_KEY = credentials.apiKey;
     if (credentials.projectId)
         env.CURRENTS_PROJECT_ID = credentials.projectId;
     if (credentials.oidcAudience) {

@@ -53,7 +53,9 @@ On **re-run attempts** (`GITHUB_RUN_ATTEMPT` > 1), the main step runs
 `extra-discovery-flags` to `--last-failed`. The workflow should define
 **`CURRENTS_API_KEY`**, **`CURRENTS_PROJECT_ID`** (and related environment
 variables as in the docs), and set **`or8n: true`** (or `use-api: true`) as
-shown in the [orchestration section][or8n-section] of the documentation.
+shown in the [orchestration section][or8n-section] of the documentation. The
+`api-key` and `project-id` inputs are passed to the CLI as `CURRENTS_API_KEY`
+and `CURRENTS_PROJECT_ID`.
 
 The previous run's failed tests are the whole run's. If you also pass your own
 `--shard`, each shard reruns the failed tests in its share, which covers every

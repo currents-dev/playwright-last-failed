@@ -70,11 +70,13 @@ type Env = { [name: string]: string }
 // of the command line, which the runner prints in the log.
 export function withCredentials(credentials: {
   key?: string
+  apiKey?: string
   projectId?: string
   oidcAudience?: string
 }): Env {
   const env: Env = { ...(process.env as Env) }
   if (credentials.key) env.CURRENTS_RECORD_KEY = credentials.key
+  if (credentials.apiKey) env.CURRENTS_API_KEY = credentials.apiKey
   if (credentials.projectId) env.CURRENTS_PROJECT_ID = credentials.projectId
   if (credentials.oidcAudience) {
     env.CURRENTS_OIDC_AUDIENCE = credentials.oidcAudience
