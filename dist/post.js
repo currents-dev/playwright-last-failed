@@ -49283,6 +49283,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.parseTemplate = parseTemplate;
 exports.parseIntSafe = parseIntSafe;
 exports.parseYamlBoolean = parseYamlBoolean;
+exports.rerunPreviousCIBuildId = rerunPreviousCIBuildId;
 exports.withCredentials = withCredentials;
 const lodash_1 = __importDefault(__nccwpck_require__(2356));
 function parseTemplate(value) {
@@ -49329,12 +49330,24 @@ function parseYamlBoolean(value) {
     }
     return null;
 }
+// The previous-ci-build-id input on a re-run, for the reporter to send as
+// CURRENTS_PREVIOUS_CI_BUILD_ID: Currents then links the run to the attempt
+// before it and repeats that attempt's split of the tests. Currents finds the
+// previous attempt of the default CI build ID on its own, but not of a custom
+// one. Nothing on the first attempt, where the documented input names attempt
+// 0, a run that does not exist.
+function rerunPreviousCIBuildId(runAttempt, input) {
+    const previous = input && parseTemplate(input);
+    return runAttempt > 1 && previous ? previous : undefined;
+}
 // The CLI reads these from its environment. The record key goes there instead
 // of the command line, which the runner prints in the log.
 function withCredentials(credentials) {
     const env = { ...process.env };
     if (credentials.key)
         env.CURRENTS_RECORD_KEY = credentials.key;
+    if (credentials.apiKey)
+        env.CURRENTS_API_KEY = credentials.apiKey;
     if (credentials.projectId)
         env.CURRENTS_PROJECT_ID = credentials.projectId;
     if (credentials.oidcAudience) {

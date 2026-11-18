@@ -53,7 +53,15 @@ On **re-run attempts** (`GITHUB_RUN_ATTEMPT` > 1), the main step runs
 `extra-discovery-flags` to `--last-failed`. The workflow should define
 **`CURRENTS_API_KEY`**, **`CURRENTS_PROJECT_ID`** (and related environment
 variables as in the docs), and set **`or8n: true`** (or `use-api: true`) as
-shown in the [orchestration section][or8n-section] of the documentation.
+shown in the [orchestration section][or8n-section] of the documentation. The
+`api-key` and `project-id` inputs are passed to the CLI as `CURRENTS_API_KEY`
+and `CURRENTS_PROJECT_ID`.
+
+The previous run's failed tests are the whole run's. If you also pass your own
+`--shard`, each shard reruns the failed tests in its share, which covers every
+failed test with "Re-run all jobs". With "Re-run failed jobs" it does only when
+the re-run is linked to the attempt before it, so every shard gets the same
+tests again: keep the default CI build ID, or set `previous-ci-build-id`.
 
 ## Outputs
 
@@ -96,7 +104,11 @@ normally.
   empty.
 - **`previous-ci-build-id`** (optional, default `''`). Override for the previous
   CI build ID when resolving the prior run (see [custom CI build
-  ID][custom-ci-build-id]).
+  ID][custom-ci-build-id]). On a re-run the action also exports it as
+  `CURRENTS_PREVIOUS_CI_BUILD_ID`, in both modes, so the reporter links the run
+  to the attempt before it. Set it when you use a custom CI build ID: a re-run
+  that is not linked can split the tests across shards differently from the
+  first attempt.
 
 \*In cache mode a record key (input or environment) is needed for cache
 reads/writes, unless the job uses GitHub OIDC (see below).
