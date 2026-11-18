@@ -5,6 +5,7 @@ import {
   parseIntSafe,
   parseTemplate,
   parseYamlBoolean,
+  rerunPreviousCIBuildId,
   withCredentials
 } from './utils'
 
@@ -50,6 +51,13 @@ async function run(): Promise<void> {
   try {
     const inputs = getInputs()
     if (inputs.key) core.setSecret(inputs.key)
+    const previousCIBuildId = rerunPreviousCIBuildId(
+      parseIntSafe(process.env.GITHUB_RUN_ATTEMPT, 1),
+      inputs.previousCIBuildId
+    )
+    if (previousCIBuildId) {
+      core.exportVariable('CURRENTS_PREVIOUS_CI_BUILD_ID', previousCIBuildId)
+    }
 
     await exec.exec('npm install -g @currents/cmd')
 

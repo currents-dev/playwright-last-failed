@@ -50,6 +50,20 @@ export function parseYamlBoolean(value: string): boolean | null {
   return null
 }
 
+// The previous-ci-build-id input on a re-run, for the reporter to send as
+// CURRENTS_PREVIOUS_CI_BUILD_ID: Currents then links the run to the attempt
+// before it and repeats that attempt's split of the tests. Currents finds the
+// previous attempt of the default CI build ID on its own, but not of a custom
+// one. Nothing on the first attempt, where the documented input names attempt
+// 0, a run that does not exist.
+export function rerunPreviousCIBuildId(
+  runAttempt: number,
+  input?: string
+): string | undefined {
+  const previous = input && parseTemplate(input)
+  return runAttempt > 1 && previous ? previous : undefined
+}
+
 type Env = { [name: string]: string }
 
 // The CLI reads these from its environment. The record key goes there instead

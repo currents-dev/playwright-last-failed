@@ -2,8 +2,29 @@ import {
   parseIntSafe,
   parseTemplate,
   parseYamlBoolean,
+  rerunPreviousCIBuildId,
   withCredentials
 } from '../utils'
+
+describe('rerunPreviousCIBuildId', () => {
+  it('returns the input on a re-run', () => {
+    expect(rerunPreviousCIBuildId(2, 'currents-100-1')).toBe('currents-100-1')
+  })
+
+  it('evaluates a template in the input', () => {
+    expect(rerunPreviousCIBuildId(3, 'currents-100-<%= 3 - 1 %>')).toBe(
+      'currents-100-2'
+    )
+  })
+
+  it.each([
+    [1, 'currents-100-0'],
+    [2, ''],
+    [2, undefined]
+  ])('returns nothing on attempt %d with the input %p', (runAttempt, input) => {
+    expect(rerunPreviousCIBuildId(runAttempt, input)).toBeUndefined()
+  })
+})
 
 describe('parseTemplate', () => {
   it.each([
