@@ -132,8 +132,8 @@ use their own value (for on-prem, the one your admin chose, for example
 
 OIDC requires the trust policy ID in `oidc-policy-id` or
 `CURRENTS_OIDC_POLICY_ID`. The action passes it to the CLI as
-`CURRENTS_OIDC_POLICY_ID`; the exchange sends `policy_id` without a `project_id`
-fallback. The project ID still selects the project for API calls.
+`CURRENTS_OIDC_POLICY_ID`, and the exchange sends only `policy_id`. Without a
+policy ID the exchange fails, also when `project-id` is set.
 
 A record key set in `key` or `CURRENTS_RECORD_KEY` always wins.
 
@@ -148,7 +148,6 @@ steps:
     uses: currents-dev/playwright-last-failed@v1
     with:
       oidc-policy-id: ${{ vars.CURRENTS_OIDC_POLICY_ID }}
-      project-id: my-project-id
       matrix-index: ${{ matrix.shard }}
       matrix-total: ${{ strategy.job-total }}
 ```
