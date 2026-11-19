@@ -49219,7 +49219,9 @@ const utils_1 = __nccwpck_require__(1798);
 function getPostState() {
     return {
         or8n: core.getState('or8n') === 'true' || core.getState('useAPI') === 'true',
-        key: core.getInput('key'),
+        key: core.getState('oidcRecordKey') ||
+            core.getInput('key') ||
+            process.env.CURRENTS_RECORD_KEY,
         projectId: core.getState('projectId'),
         oidcAudience: core.getInput('oidc-audience'),
         debug: core.getState('debug') === 'true',
@@ -49231,6 +49233,9 @@ function getPostState() {
     };
 }
 async function run() {
+    const oidcRecordKey = core.getState('oidcRecordKey');
+    if (oidcRecordKey)
+        core.setSecret(oidcRecordKey);
     try {
         const state = getPostState();
         if (state.key)
@@ -49264,6 +49269,18 @@ async function run() {
     }
     catch (error) {
         core.setFailed(error.message);
+    }
+    finally {
+        if (oidcRecordKey) {
+            try {
+                await exec.exec('currents', ['ci', 'auth', 'revoke', '--stdin'], {
+                    input: Buffer.from(oidcRecordKey + '\n')
+                });
+            }
+            catch {
+                core.warning('Failed to revoke the OIDC record key');
+            }
+        }
     }
 }
 run();

@@ -24,8 +24,8 @@ tests run on retry.
 
 ## How it works
 
-The action runs on **Node 24** and installs `@currents/cmd` globally
-(`npm install -g @currents/cmd`). It then behaves in one of two ways:
+The action runs on **Node 24** and installs `@currents/cmd@^3.3.0` globally
+(`npm install -g @currents/cmd@^3.3.0`). It then behaves in one of two ways:
 
 ### 1. Cache mode (default)
 
@@ -115,20 +115,18 @@ reads/writes, unless the job uses GitHub OIDC (see below).
 
 ### Without a stored record key
 
-If no record key is set, the Currents CLI gets a record key from an OIDC token:
+If no record key is set, the action runs
+`currents ci auth get-record-key --oidc-provider github-actions` to obtain a
+temporary record key. The job needs `permissions: id-token: write`. The action
+masks the key, uses it as `CURRENTS_RECORD_KEY` for cache reads and writes, and
+saves it for the post step. After saving the cache, the post step revokes the
+key with `currents ci auth revoke --stdin`, including when saving fails. A
+revocation failure produces a warning.
 
-- On GitHub Actions, a job with `permissions: id-token: write` needs nothing
-  else. The CLI requests the token from GitHub with the audience
-  `currents:record-key` and exchanges it with Currents for a short-lived record
-  key.
-- To pass a token yourself, set `CURRENTS_OIDC_TOKEN` in the step's `env`. Its
-  audience must be the same value.
-
-The audience is a fixed name, not derived from the Currents URL. Staging and
-on-prem Currents use their own value (for on-prem, the one your admin chose, for
-example `currents:record-key:<company>`). Set it in the `oidc-audience` input or
-`CURRENTS_OIDC_AUDIENCE`; the action passes it to the CLI as
-`CURRENTS_OIDC_AUDIENCE`.
+The default OIDC audience is `currents:record-key`. Staging and on-prem Currents
+use their own value (for on-prem, the one your admin chose, for example
+`currents:record-key:<company>`). Set the `oidc-audience` input to pass it as
+`--audience`, or set `CURRENTS_OIDC_AUDIENCE` for the CLI to read.
 
 OIDC needs a project ID: it identifies the organization whose trust policy is
 checked for the token. The record key that comes back works for the whole
@@ -152,7 +150,7 @@ steps:
       matrix-total: ${{ strategy.job-total }}
 ```
 
-This requires `@currents/cmd` 3.1.0 or later. API mode (`or8n` / `use-api`) uses
+This requires `@currents/cmd` 3.3.0 or later. API mode (`or8n` / `use-api`) uses
 `api-key` and is not affected.
 
 ## Setup
