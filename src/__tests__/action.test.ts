@@ -28,6 +28,7 @@ beforeEach(() => {
   for (const key of Object.keys(state)) delete state[key]
   process.env = { ...originalEnv }
   delete process.env.CURRENTS_RECORD_KEY
+  delete process.env.CURRENTS_OIDC_POLICY_ID
   delete process.env.CURRENTS_OIDC_AUDIENCE
   delete process.env.CURRENTS_PROJECT_ID
   jest.mocked(core.getInput).mockImplementation(name => inputs[name] || '')
@@ -50,8 +51,10 @@ afterEach(() => {
 it('obtains, masks, saves and reuses an OIDC key through cache upload and revocation', async () => {
   inputs['project-id'] = 'project'
   inputs['oidc-audience'] = 'custom-audience'
+  inputs['oidc-policy-id'] = 'input-policy'
+  process.env.CURRENTS_OIDC_POLICY_ID = 'env-policy'
   await main()
-  expect(exec.exec).toHaveBeenCalledWith('npm install -g @currents/cmd@^3.3.0')
+  expect(exec.exec).toHaveBeenCalledWith('npm install -g @currents/cmd@^3.4.0')
   expect(exec.getExecOutput).toHaveBeenCalledWith(
     'currents',
     [
@@ -65,7 +68,10 @@ it('obtains, masks, saves and reuses an OIDC key through cache upload and revoca
     ],
     expect.objectContaining({
       silent: true,
-      env: expect.objectContaining({ CURRENTS_PROJECT_ID: 'project' })
+      env: expect.objectContaining({
+        CURRENTS_PROJECT_ID: 'project',
+        CURRENTS_OIDC_POLICY_ID: 'input-policy'
+      })
     })
   )
   expect(core.setSecret).toHaveBeenCalledWith('temporary-key')
@@ -90,8 +96,9 @@ it('obtains, masks, saves and reuses an OIDC key through cache upload and revoca
   expect(core.setFailed).not.toHaveBeenCalled()
 })
 
-it('preserves environment project and audience when inputs are empty', async () => {
+it('preserves environment policy, project and audience when inputs are empty', async () => {
   process.env.CURRENTS_PROJECT_ID = 'env-project'
+  process.env.CURRENTS_OIDC_POLICY_ID = 'env-policy'
   process.env.CURRENTS_OIDC_AUDIENCE = 'env-audience'
   await main()
   expect(exec.getExecOutput).toHaveBeenCalledWith(
@@ -101,6 +108,7 @@ it('preserves environment project and audience when inputs are empty', async () 
       silent: true,
       env: expect.objectContaining({
         CURRENTS_PROJECT_ID: 'env-project',
+        CURRENTS_OIDC_POLICY_ID: 'env-policy',
         CURRENTS_OIDC_AUDIENCE: 'env-audience'
       })
     })

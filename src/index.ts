@@ -18,6 +18,7 @@ interface ActionInputs {
   matrixTotal: string
   apiKey?: string
   projectId?: string
+  oidcPolicyId?: string
   oidcAudience?: string
   previousCIBuildId?: string
   key?: string
@@ -37,6 +38,7 @@ function getInputs(): ActionInputs {
     projectId: core.getInput('project-id') ?? process.env.CURRENTS_PROJECT_ID,
     previousCIBuildId: core.getInput('previous-ci-build-id'),
     key: core.getInput('key') || process.env.CURRENTS_RECORD_KEY,
+    oidcPolicyId: core.getInput('oidc-policy-id'),
     oidcAudience: core.getInput('oidc-audience'),
     id: core.getInput('id'),
     path: core.getInput('path'),
@@ -60,7 +62,7 @@ async function run(): Promise<void> {
       core.exportVariable('CURRENTS_PREVIOUS_CI_BUILD_ID', previousCIBuildId)
     }
 
-    await exec.exec('npm install -g @currents/cmd@^3.3.0')
+    await exec.exec('npm install -g @currents/cmd@^3.4.0')
 
     const useAPI = inputs.useAPI || inputs.or8n
     core.saveState('or8n', useAPI)

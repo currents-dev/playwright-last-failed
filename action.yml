@@ -53,8 +53,14 @@ inputs:
     default: ''
   project-id:
     description:
-      'Project ID obtained from Currents dashboard. Required when the record key
-      comes from OIDC.'
+      'Project ID obtained from Currents dashboard. Selects the project for API
+      calls, independently of the OIDC trust policy.'
+    required: false
+    default: ''
+  oidc-policy-id:
+    description:
+      'Currents trust policy ID. Required for OIDC. Falls back to
+      CURRENTS_OIDC_POLICY_ID.'
     required: false
     default: ''
   oidc-audience:

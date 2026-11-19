@@ -49227,6 +49227,7 @@ function getInputs() {
         projectId: core.getInput('project-id') ?? process.env.CURRENTS_PROJECT_ID,
         previousCIBuildId: core.getInput('previous-ci-build-id'),
         key: core.getInput('key') || process.env.CURRENTS_RECORD_KEY,
+        oidcPolicyId: core.getInput('oidc-policy-id'),
         oidcAudience: core.getInput('oidc-audience'),
         id: core.getInput('id'),
         path: core.getInput('path'),
@@ -49247,7 +49248,7 @@ async function run() {
         if (previousCIBuildId) {
             core.exportVariable('CURRENTS_PREVIOUS_CI_BUILD_ID', previousCIBuildId);
         }
-        await exec.exec('npm install -g @currents/cmd@^3.3.0');
+        await exec.exec('npm install -g @currents/cmd@^3.4.0');
         const useAPI = inputs.useAPI || inputs.or8n;
         core.saveState('or8n', useAPI);
         if (useAPI) {
@@ -49424,6 +49425,9 @@ function withCredentials(credentials) {
         env.CURRENTS_API_KEY = credentials.apiKey;
     if (credentials.projectId)
         env.CURRENTS_PROJECT_ID = credentials.projectId;
+    if (credentials.oidcPolicyId) {
+        env.CURRENTS_OIDC_POLICY_ID = credentials.oidcPolicyId;
+    }
     if (credentials.oidcAudience) {
         env.CURRENTS_OIDC_AUDIENCE = credentials.oidcAudience;
     }
