@@ -84,8 +84,7 @@ it('obtains, masks, saves and reuses an OIDC key through cache upload and revoca
     'currents',
     ['ci', 'auth', 'revoke', '--stdin'],
     {
-      input: Buffer.from('temporary-key\n'),
-      silent: true
+      input: Buffer.from('temporary-key\n')
     }
   )
   expect(core.setFailed).not.toHaveBeenCalled()

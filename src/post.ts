@@ -80,8 +80,7 @@ async function run(): Promise<void> {
     if (oidcRecordKey) {
       try {
         await exec.exec('currents', ['ci', 'auth', 'revoke', '--stdin'], {
-          input: Buffer.from(oidcRecordKey + '\n'),
-          silent: true
+          input: Buffer.from(oidcRecordKey + '\n')
         })
       } catch {
         core.warning('Failed to revoke the OIDC record key')

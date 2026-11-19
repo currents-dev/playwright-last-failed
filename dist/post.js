@@ -49274,8 +49274,7 @@ async function run() {
         if (oidcRecordKey) {
             try {
                 await exec.exec('currents', ['ci', 'auth', 'revoke', '--stdin'], {
-                    input: Buffer.from(oidcRecordKey + '\n'),
-                    silent: true
+                    input: Buffer.from(oidcRecordKey + '\n')
                 });
             }
             catch {
