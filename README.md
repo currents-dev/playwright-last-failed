@@ -98,7 +98,9 @@ normally.
 - **`api-key`** (optional, default `''`). API key, or set `CURRENTS_API_KEY` in
   the environment.
 - **`project-id`** (optional, default `''`). Currents project ID, or set
-  `CURRENTS_PROJECT_ID`. Required when the record key comes from OIDC.
+  `CURRENTS_PROJECT_ID`. Selects the project for API calls.
+- **`oidc-policy-id`** (optional, default `''`). Currents trust policy ID, or
+  set `CURRENTS_OIDC_POLICY_ID`. Required when using OIDC.
 - **`oidc-audience`** (optional, default `''`). Audience of the OIDC token, or
   set `CURRENTS_OIDC_AUDIENCE`. The CLI uses `currents:record-key` when it is
   empty.
@@ -128,10 +130,10 @@ use their own value (for on-prem, the one your admin chose, for example
 `currents:record-key:<company>`). Set the `oidc-audience` input to pass it as
 `--audience`, or set `CURRENTS_OIDC_AUDIENCE` for the CLI to read.
 
-OIDC needs a project ID: it identifies the organization whose trust policy is
-checked for the token. The record key that comes back works for the whole
-organization, not only that project. Set the `project-id` input or
-`CURRENTS_PROJECT_ID`; the action passes it to the CLI as `CURRENTS_PROJECT_ID`.
+OIDC requires the trust policy ID in `oidc-policy-id` or
+`CURRENTS_OIDC_POLICY_ID`. The action passes it to the CLI as
+`CURRENTS_OIDC_POLICY_ID`; the exchange sends `policy_id` without a `project_id`
+fallback. The project ID still selects the project for API calls.
 
 A record key set in `key` or `CURRENTS_RECORD_KEY` always wins.
 
@@ -145,12 +147,13 @@ steps:
     id: last-failed
     uses: currents-dev/playwright-last-failed@v1
     with:
+      oidc-policy-id: ${{ vars.CURRENTS_OIDC_POLICY_ID }}
       project-id: my-project-id
       matrix-index: ${{ matrix.shard }}
       matrix-total: ${{ strategy.job-total }}
 ```
 
-This requires `@currents/cmd` 3.3.0 or later. API mode (`or8n` / `use-api`) uses
+This requires `@currents/cmd` 3.4.0 or later. API mode (`or8n` / `use-api`) uses
 `api-key` and is not affected.
 
 ## Setup

@@ -49367,6 +49367,9 @@ function withCredentials(credentials) {
         env.CURRENTS_API_KEY = credentials.apiKey;
     if (credentials.projectId)
         env.CURRENTS_PROJECT_ID = credentials.projectId;
+    if (credentials.oidcPolicyId) {
+        env.CURRENTS_OIDC_POLICY_ID = credentials.oidcPolicyId;
+    }
     if (credentials.oidcAudience) {
         env.CURRENTS_OIDC_AUDIENCE = credentials.oidcAudience;
     }
