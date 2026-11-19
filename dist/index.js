@@ -49248,7 +49248,7 @@ async function run() {
         if (previousCIBuildId) {
             core.exportVariable('CURRENTS_PREVIOUS_CI_BUILD_ID', previousCIBuildId);
         }
-        await exec.exec('npm install -g @currents/cmd@^3.3.0');
+        await exec.exec('npm install -g @currents/cmd@^3.4.0');
         const useAPI = inputs.useAPI || inputs.or8n;
         core.saveState('or8n', useAPI);
         if (useAPI) {

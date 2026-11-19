@@ -54,7 +54,7 @@ it('obtains, masks, saves and reuses an OIDC key through cache upload and revoca
   inputs['oidc-policy-id'] = 'input-policy'
   process.env.CURRENTS_OIDC_POLICY_ID = 'env-policy'
   await main()
-  expect(exec.exec).toHaveBeenCalledWith('npm install -g @currents/cmd@^3.3.0')
+  expect(exec.exec).toHaveBeenCalledWith('npm install -g @currents/cmd@^3.4.0')
   expect(exec.getExecOutput).toHaveBeenCalledWith(
     'currents',
     [
