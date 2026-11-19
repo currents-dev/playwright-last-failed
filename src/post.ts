@@ -19,7 +19,10 @@ function getPostState(): PostState {
   return {
     or8n:
       core.getState('or8n') === 'true' || core.getState('useAPI') === 'true',
-    key: core.getInput('key'),
+    key:
+      core.getState('oidcRecordKey') ||
+      core.getInput('key') ||
+      process.env.CURRENTS_RECORD_KEY,
     projectId: core.getState('projectId'),
     oidcAudience: core.getInput('oidc-audience'),
     debug: core.getState('debug') === 'true',
@@ -32,6 +35,8 @@ function getPostState(): PostState {
 }
 
 async function run(): Promise<void> {
+  const oidcRecordKey = core.getState('oidcRecordKey')
+  if (oidcRecordKey) core.setSecret(oidcRecordKey)
   try {
     const state = getPostState()
     if (state.key) core.setSecret(state.key)
@@ -71,6 +76,17 @@ async function run(): Promise<void> {
     })
   } catch (error) {
     core.setFailed((error as Error).message)
+  } finally {
+    if (oidcRecordKey) {
+      try {
+        await exec.exec('currents', ['ci', 'auth', 'revoke', '--stdin'], {
+          input: Buffer.from(oidcRecordKey + '\n'),
+          silent: true
+        })
+      } catch {
+        core.warning('Failed to revoke the OIDC record key')
+      }
+    }
   }
 }
 

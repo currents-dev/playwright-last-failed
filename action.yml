@@ -7,8 +7,8 @@ inputs:
   key:
     description:
       'Your secret Record Key obtained from Currents. Optional: without it the
-      CLI gets a record key from an OIDC token (id-token: write on GitHub
-      Actions, or CURRENTS_OIDC_TOKEN).'
+      action obtains a temporary record key using GitHub Actions OIDC (requires
+      id-token: write) and revokes it in the post step.'
     required: false
     default: ''
   debug:
@@ -59,8 +59,9 @@ inputs:
     default: ''
   oidc-audience:
     description:
-      'Audience of the OIDC token, when the record key comes from OIDC. Default
-      currents:record-key. Staging and on-prem Currents use their own value.'
+      'Audience for GitHub Actions OIDC. Falls back to CURRENTS_OIDC_AUDIENCE,
+      then currents:record-key. Staging and on-prem Currents use their own
+      value.'
     required: false
     default: ''
   previous-ci-build-id:
