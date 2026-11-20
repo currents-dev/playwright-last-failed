@@ -99,11 +99,6 @@ normally.
   the environment.
 - **`project-id`** (optional, default `''`). Currents project ID, or set
   `CURRENTS_PROJECT_ID`. Selects the project for API calls.
-- **`oidc-policy-id`** (optional, default `''`). Currents trust policy ID, or
-  set `CURRENTS_OIDC_POLICY_ID`. Required when using OIDC.
-- **`oidc-audience`** (optional, default `''`). Audience of the OIDC token, or
-  set `CURRENTS_OIDC_AUDIENCE`. The CLI uses `currents:record-key` when it is
-  empty.
 - **`previous-ci-build-id`** (optional, default `''`). Override for the previous
   CI build ID when resolving the prior run (see [custom CI build
   ID][custom-ci-build-id]). On a re-run the action also exports it as
@@ -112,30 +107,16 @@ normally.
   that is not linked can split the tests across shards differently from the
   first attempt.
 
-\*In cache mode a record key (input or environment) is needed for cache
-reads/writes, unless the job uses GitHub OIDC (see below).
+\*In cache mode a record key (input or environment) is required for cache
+reads/writes.
 
 ### Without a stored record key
 
-If no record key is set, the action runs
-`currents ci auth get-record-key --oidc-provider github-actions` to obtain a
-temporary record key. The job needs `permissions: id-token: write`. The action
-masks the key, uses it as `CURRENTS_RECORD_KEY` for cache reads and writes, and
-saves it for the post step. After saving the cache, the post step revokes the
-key with `currents ci auth revoke --stdin`, including when saving fails. A
-revocation failure produces a warning.
-
-The default OIDC audience is `currents:record-key`. Staging and on-prem Currents
-use their own value (for on-prem, the one your admin chose, for example
-`currents:record-key:<company>`). Set the `oidc-audience` input to pass it as
-`--audience`, or set `CURRENTS_OIDC_AUDIENCE` for the CLI to read.
-
-OIDC requires the trust policy ID in `oidc-policy-id` or
-`CURRENTS_OIDC_POLICY_ID`. The action passes it to the CLI as
-`CURRENTS_OIDC_POLICY_ID`, and the exchange sends only `policy_id`. Without a
-policy ID the exchange fails, also when `project-id` is set.
-
-A record key set in `key` or `CURRENTS_RECORD_KEY` always wins.
+The action takes no OIDC inputs. To use GitHub Actions OIDC instead of a stored
+record key, get a record key with `@currents/cmd` in a step before this action
+and export it as `CURRENTS_RECORD_KEY`. The job needs
+`permissions: id-token: write`. Get an API key for API mode the same way with
+`currents ci auth get-api-token`, exported as `CURRENTS_API_KEY`.
 
 ```yaml
 permissions:
@@ -143,17 +124,24 @@ permissions:
   contents: read
 
 steps:
+  - name: Get a Currents record key
+    env:
+      CURRENTS_OIDC_POLICY_ID: ${{ vars.CURRENTS_OIDC_POLICY_ID }}
+    run: |
+      key=$(npx --yes --ignore-scripts --package @currents/cmd@3.4.0 \
+        currents ci auth get-record-key --oidc-provider github-actions)
+      echo "::add-mask::$key"
+      echo "CURRENTS_RECORD_KEY=$key" >> "$GITHUB_ENV"
+
   - name: Playwright Last Failed
     id: last-failed
     uses: currents-dev/playwright-last-failed@v1
     with:
-      oidc-policy-id: ${{ vars.CURRENTS_OIDC_POLICY_ID }}
       matrix-index: ${{ matrix.shard }}
       matrix-total: ${{ strategy.job-total }}
 ```
 
-This requires `@currents/cmd` 3.4.0 or later. API mode (`or8n` / `use-api`) uses
-`api-key` and is not affected.
+The key stays valid until it expires or `currents ci auth revoke` revokes it.
 
 ## Setup
 

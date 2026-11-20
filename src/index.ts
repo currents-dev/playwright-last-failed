@@ -18,8 +18,6 @@ interface ActionInputs {
   matrixTotal: string
   apiKey?: string
   projectId?: string
-  oidcPolicyId?: string
-  oidcAudience?: string
   previousCIBuildId?: string
   key?: string
   id?: string
@@ -38,8 +36,6 @@ function getInputs(): ActionInputs {
     projectId: core.getInput('project-id') ?? process.env.CURRENTS_PROJECT_ID,
     previousCIBuildId: core.getInput('previous-ci-build-id'),
     key: core.getInput('key') || process.env.CURRENTS_RECORD_KEY,
-    oidcPolicyId: core.getInput('oidc-policy-id'),
-    oidcAudience: core.getInput('oidc-audience'),
     id: core.getInput('id'),
     path: core.getInput('path'),
     outputDir: core.getInput('output-dir'),
@@ -69,26 +65,6 @@ async function run(): Promise<void> {
     if (useAPI) {
       await or8n(inputs)
       return
-    }
-
-    if (!inputs.key) {
-      const args = [
-        'ci',
-        'auth',
-        'get-record-key',
-        '--oidc-provider',
-        'github-actions'
-      ]
-      if (inputs.oidcAudience) args.push('--audience', inputs.oidcAudience)
-      const result = await exec.getExecOutput('currents', args, {
-        silent: true,
-        env: withCredentials(inputs)
-      })
-      inputs.key = result.stdout.trim()
-      if (!inputs.key)
-        throw new Error('Currents authentication returned no record key')
-      core.setSecret(inputs.key)
-      core.saveState('oidcRecordKey', inputs.key)
     }
 
     const presetOutput = '.currents_env'

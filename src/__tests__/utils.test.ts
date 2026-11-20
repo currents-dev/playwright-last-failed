@@ -107,8 +107,7 @@ describe('withCredentials', () => {
   const names = [
     'CURRENTS_PROJECT_ID',
     'CURRENTS_RECORD_KEY',
-    'CURRENTS_API_KEY',
-    'CURRENTS_OIDC_AUDIENCE'
+    'CURRENTS_API_KEY'
   ] as const
   const before = Object.fromEntries(names.map(n => [n, process.env[n]]))
 
@@ -131,28 +130,15 @@ describe('withCredentials', () => {
     })
   })
 
-  it('sets the OIDC audience given', () => {
-    expect(
-      withCredentials({ oidcAudience: 'currents:record-key:acme' })
-    ).toMatchObject({
-      CURRENTS_OIDC_AUDIENCE: 'currents:record-key:acme'
-    })
-  })
-
   it('keeps the values of the job when the inputs are empty', () => {
     process.env.CURRENTS_PROJECT_ID = 'from-env'
     process.env.CURRENTS_RECORD_KEY = 'key-from-env'
     process.env.CURRENTS_API_KEY = 'api-key-from-env'
-    process.env.CURRENTS_OIDC_AUDIENCE = 'audience-from-env'
-    for (const empty of [
-      { key: '', apiKey: '', projectId: '', oidcAudience: '' },
-      {}
-    ]) {
+    for (const empty of [{ key: '', apiKey: '', projectId: '' }, {}]) {
       const env = withCredentials(empty)
       expect(env.CURRENTS_PROJECT_ID).toBe('from-env')
       expect(env.CURRENTS_RECORD_KEY).toBe('key-from-env')
       expect(env.CURRENTS_API_KEY).toBe('api-key-from-env')
-      expect(env.CURRENTS_OIDC_AUDIENCE).toBe('audience-from-env')
     }
   })
 })

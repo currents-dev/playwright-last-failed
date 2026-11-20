@@ -72,18 +72,10 @@ export function withCredentials(credentials: {
   key?: string
   apiKey?: string
   projectId?: string
-  oidcPolicyId?: string
-  oidcAudience?: string
 }): Env {
   const env: Env = { ...(process.env as Env) }
   if (credentials.key) env.CURRENTS_RECORD_KEY = credentials.key
   if (credentials.apiKey) env.CURRENTS_API_KEY = credentials.apiKey
   if (credentials.projectId) env.CURRENTS_PROJECT_ID = credentials.projectId
-  if (credentials.oidcPolicyId) {
-    env.CURRENTS_OIDC_POLICY_ID = credentials.oidcPolicyId
-  }
-  if (credentials.oidcAudience) {
-    env.CURRENTS_OIDC_AUDIENCE = credentials.oidcAudience
-  }
   return env
 }
