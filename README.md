@@ -128,7 +128,8 @@ steps:
     env:
       CURRENTS_OIDC_POLICY_ID: ${{ vars.CURRENTS_OIDC_POLICY_ID }}
     run: |
-      key=$(npx --yes --package @currents/cmd@3 currents ci auth get-record-key --oidc-provider github-actions)
+      key=$(npx --yes --ignore-scripts --package @currents/cmd@3.4.0 \
+        currents ci auth get-record-key --oidc-provider github-actions)
       echo "::add-mask::$key"
       echo "CURRENTS_RECORD_KEY=$key" >> "$GITHUB_ENV"
 
