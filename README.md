@@ -135,7 +135,7 @@ steps:
 
   - name: Playwright Last Failed
     id: last-failed
-    uses: currents-dev/playwright-last-failed@v1
+    uses: currents-dev/playwright-last-failed@v2
     with:
       matrix-index: ${{ matrix.shard }}
       matrix-total: ${{ strategy.job-total }}
@@ -161,7 +161,7 @@ The key stays valid until it expires or `currents ci auth revoke` revokes it.
 ```yaml
 - name: Playwright Last Failed
   id: last-failed
-  uses: currents-dev/playwright-last-failed@v1
+  uses: currents-dev/playwright-last-failed@v2
   env:
     CURRENTS_RECORD_KEY: ${{ secrets.CURRENTS_RECORD_KEY }}
   with:
