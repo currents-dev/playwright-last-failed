@@ -6,9 +6,8 @@ author: 'Currents Software Inc'
 inputs:
   key:
     description:
-      'Your secret Record Key obtained from Currents. Optional: without it the
-      action obtains a temporary record key using GitHub Actions OIDC (requires
-      id-token: write) and revokes it in the post step.'
+      'Your secret Record Key obtained from Currents. Falls back to
+      CURRENTS_RECORD_KEY.'
     required: false
     default: ''
   debug:
@@ -52,22 +51,7 @@ inputs:
     required: false
     default: ''
   project-id:
-    description:
-      'Project ID obtained from Currents dashboard. Selects the project for API
-      calls, independently of the OIDC trust policy.'
-    required: false
-    default: ''
-  oidc-policy-id:
-    description:
-      'Currents trust policy ID. Required for OIDC. Falls back to
-      CURRENTS_OIDC_POLICY_ID.'
-    required: false
-    default: ''
-  oidc-audience:
-    description:
-      'Audience for GitHub Actions OIDC. Falls back to CURRENTS_OIDC_AUDIENCE,
-      then currents:record-key. Staging and on-prem Currents use their own
-      value.'
+    description: 'Project ID obtained from Currents dashboard'
     required: false
     default: ''
   previous-ci-build-id:

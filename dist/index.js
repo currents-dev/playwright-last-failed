@@ -49227,8 +49227,6 @@ function getInputs() {
         projectId: core.getInput('project-id') ?? process.env.CURRENTS_PROJECT_ID,
         previousCIBuildId: core.getInput('previous-ci-build-id'),
         key: core.getInput('key') || process.env.CURRENTS_RECORD_KEY,
-        oidcPolicyId: core.getInput('oidc-policy-id'),
-        oidcAudience: core.getInput('oidc-audience'),
         id: core.getInput('id'),
         path: core.getInput('path'),
         outputDir: core.getInput('output-dir'),
@@ -49254,26 +49252,6 @@ async function run() {
         if (useAPI) {
             await or8n(inputs);
             return;
-        }
-        if (!inputs.key) {
-            const args = [
-                'ci',
-                'auth',
-                'get-record-key',
-                '--oidc-provider',
-                'github-actions'
-            ];
-            if (inputs.oidcAudience)
-                args.push('--audience', inputs.oidcAudience);
-            const result = await exec.getExecOutput('currents', args, {
-                silent: true,
-                env: (0, utils_1.withCredentials)(inputs)
-            });
-            inputs.key = result.stdout.trim();
-            if (!inputs.key)
-                throw new Error('Currents authentication returned no record key');
-            core.setSecret(inputs.key);
-            core.saveState('oidcRecordKey', inputs.key);
         }
         const presetOutput = '.currents_env';
         const options = [
@@ -49425,12 +49403,6 @@ function withCredentials(credentials) {
         env.CURRENTS_API_KEY = credentials.apiKey;
     if (credentials.projectId)
         env.CURRENTS_PROJECT_ID = credentials.projectId;
-    if (credentials.oidcPolicyId) {
-        env.CURRENTS_OIDC_POLICY_ID = credentials.oidcPolicyId;
-    }
-    if (credentials.oidcAudience) {
-        env.CURRENTS_OIDC_AUDIENCE = credentials.oidcAudience;
-    }
     return env;
 }
 
